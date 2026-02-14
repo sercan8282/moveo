@@ -1,0 +1,88 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "8888:80"
+    volumes:
+      - uploads_data:/var/www/uploads
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - moveo_network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-moveo}:${POSTGRES_PASSWORD:-moveo_secret_2026}@postgres:5432/${POSTGRES_DB:-moveo_cms}?schema=public
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-change_this_jwt_secret_in_production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - UPLOAD_DIR=/app/uploads
+      - NODE_ENV=production
+      - PORT=4000
+      - SITE_NAME=${SITE_NAME:-moveo-bv.nl}
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-nl}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - moveo_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-moveo}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-moveo_secret_2026}
+      - POSTGRES_DB=${POSTGRES_DB:-moveo_cms}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - moveo_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-moveo} -d ${POSTGRES_DB:-moveo_cms}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - moveo_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+networks:
+  moveo_network:
+    driver: bridge

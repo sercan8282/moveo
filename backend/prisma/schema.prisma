@@ -1,0 +1,222 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  name       String
+  role       Role     @default(EDITOR)
+  mfaSecret  String?
+  mfaEnabled Boolean  @default(false)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Page {
+  id            Int      @id @default(autoincrement())
+  title         String
+  slug          String   @unique
+  content       Json?
+  excerpt       String?
+  status        Status   @default(DRAFT)
+  parentId      Int?
+  parent        Page?    @relation("PageHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children      Page[]   @relation("PageHierarchy")
+  sortOrder     Int      @default(0)
+  metaTitle     String?
+  metaDescription String?
+  featuredImageId Int?
+  template      String   @default("default")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("pages")
+}
+
+model Post {
+  id            Int      @id @default(autoincrement())
+  title         String
+  slug          String   @unique
+  content       Json?
+  header        String?
+  headerImageId Int?
+  status        Status   @default(DRAFT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("posts")
+}
+
+model Media {
+  id           Int      @id @default(autoincrement())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  path         String
+  altText      String?
+  width        Int?
+  height       Int?
+  variants     Json?
+  createdAt    DateTime @default(now())
+
+  @@map("media")
+}
+
+model Menu {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  location  String?
+  items     MenuItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("menus")
+}
+
+model MenuItem {
+  id        Int        @id @default(autoincrement())
+  label     String
+  url       String?
+  pageId    Int?
+  menuId    Int
+  menu      Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parentId  Int?
+  parent    MenuItem?  @relation("MenuItemHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children  MenuItem[] @relation("MenuItemHierarchy")
+  sortOrder Int        @default(0)
+  target    String     @default("_self")
+  cssClass  String?
+  icon      String?
+  createdAt DateTime   @default(now())
+
+  @@map("menu_items")
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value Json
+
+  @@map("settings")
+}
+
+model HomepageSection {
+  id        Int      @id @default(autoincrement())
+  type      String
+  title     String?
+  subtitle  String?
+  content   Json?
+  sortOrder Int      @default(0)
+  visible   Boolean  @default(true)
+  settings  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("homepage_sections")
+}
+
+model Theme {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  isActive  Boolean  @default(false)
+  colors    Json
+  fonts     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("themes")
+}
+
+model FooterColumn {
+  id        Int      @id @default(autoincrement())
+  columnNum Int
+  title     String?
+  content   Json?
+  menuId    Int?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("footer_columns")
+}
+
+model ContactSubmission {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("contact_submissions")
+}
+
+model VehicleType {
+  id                    Int      @id @default(autoincrement())
+  name                  String   @unique
+  slug                  String   @unique
+  description           String?
+  pricePerKmDomestic    Float    @default(0)
+  pricePerKmInternational Float  @default(0)
+  expressSurchargePercent Float  @default(0)
+  additionalCosts       Json?
+  minPrice              Float    @default(0)
+  tollMultiplier        Float    @default(1.0)
+  active                Boolean  @default(true)
+  sortOrder             Int      @default(0)
+  icon                  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  quotes                QuoteRequest[]
+
+  @@map("vehicle_types")
+}
+
+model QuoteRequest {
+  id              Int      @id @default(autoincrement())
+  startAddress    String
+  endAddress      String
+  distanceKm      Float
+  vehicleTypeId   Int
+  vehicleType     VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)
+  isDomestic      Boolean  @default(true)
+  isExpress       Boolean  @default(false)
+  calculatedPrice Float
+  priceBreakdown  Json?
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  notes           String?
+  status          String   @default("nieuw")
+  read            Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("quote_requests")
+}

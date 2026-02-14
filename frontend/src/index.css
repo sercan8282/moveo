@@ -1,0 +1,344 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #1e40af;
+  --color-primary-light: #3b82f6;
+  --color-primary-dark: #1e3a8a;
+  --color-secondary: #0f172a;
+  --color-accent: #06b6d4;
+  --color-background: #ffffff;
+  --color-background-alt: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-text: #0f172a;
+  --color-text-light: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0;
+  --color-border-dark: #cbd5e1;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  --color-header-bg: #1e40af;
+  --color-header-text: #ffffff;
+  --color-footer-bg: #0f172a;
+  --color-footer-text: #e2e8f0;
+  --color-nav-bg: #ffffff;
+  --color-nav-text: #0f172a;
+  --color-nav-hover: #1e40af;
+  --color-button-primary: #1e40af;
+  --color-button-primary-text: #ffffff;
+  --color-link: #1e40af;
+  --color-link-hover: #3b82f6;
+  --font-heading: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  /* Navbar customization */
+  --navbar-height: 72px;
+  --navbar-style: solid;
+  --navbar-hover-effect: slide-up;
+  --navbar-hover-color: #3b82f6;
+  --navbar-active-color: #2563eb;
+  --navbar-font-size: 15px;
+  --navbar-font-weight: 500;
+  --navbar-letter-spacing: 0.01em;
+  --navbar-gap: 32px;
+  --navbar-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+}
+
+/* ═══ Navbar Hover Effect Styles ═══ */
+
+/* Slide Up - line slides up from bottom */
+.nav-link-hover-slide-up {
+  position: relative;
+  overflow: hidden;
+}
+.nav-link-hover-slide-up::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 70%;
+  height: 2.5px;
+  background: var(--navbar-hover-color, #3b82f6);
+  border-radius: 2px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nav-link-hover-slide-up:hover::after,
+.nav-link-hover-slide-up.nav-active::after {
+  transform: translateX(-50%) scaleX(1);
+}
+
+/* Glow - subtle background glow */
+.nav-link-hover-glow {
+  position: relative;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+.nav-link-hover-glow:hover,
+.nav-link-hover-glow.nav-active {
+  color: var(--navbar-hover-color, #3b82f6) !important;
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.15);
+}
+
+/* Pill - rounded background highlight */
+.nav-link-hover-pill {
+  position: relative;
+  border-radius: 9999px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nav-link-hover-pill:hover,
+.nav-link-hover-pill.nav-active {
+  background: var(--navbar-hover-color, #3b82f6);
+  color: #ffffff !important;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Bracket - animated brackets appear */
+.nav-link-hover-bracket {
+  position: relative;
+}
+.nav-link-hover-bracket::before,
+.nav-link-hover-bracket::after {
+  position: absolute;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 300;
+  color: var(--navbar-hover-color, #3b82f6);
+}
+.nav-link-hover-bracket::before {
+  content: '[';
+  left: -8px;
+  transform: translateX(5px);
+}
+.nav-link-hover-bracket::after {
+  content: ']';
+  right: -8px;
+  transform: translateX(-5px);
+}
+.nav-link-hover-bracket:hover::before,
+.nav-link-hover-bracket:hover::after,
+.nav-link-hover-bracket.nav-active::before,
+.nav-link-hover-bracket.nav-active::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Fill - background fills from left */
+.nav-link-hover-fill {
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+}
+.nav-link-hover-fill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--navbar-hover-color, #3b82f6);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+  z-index: -1;
+}
+.nav-link-hover-fill:hover::before,
+.nav-link-hover-fill.nav-active::before {
+  transform: scaleX(1);
+}
+.nav-link-hover-fill:hover,
+.nav-link-hover-fill.nav-active {
+  color: #ffffff !important;
+}
+
+/* Border Bottom - clean bottom border */
+.nav-link-hover-border {
+  position: relative;
+}
+.nav-link-hover-border::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--navbar-hover-color, #3b82f6);
+  border-radius: 3px 3px 0 0;
+  transform: scaleX(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nav-link-hover-border:hover::after,
+.nav-link-hover-border.nav-active::after {
+  transform: scaleX(1);
+}
+
+/* Scale - subtle scale up */
+.nav-link-hover-scale {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nav-link-hover-scale:hover,
+.nav-link-hover-scale.nav-active {
+  color: var(--navbar-hover-color, #3b82f6) !important;
+  transform: scale(1.08);
+  letter-spacing: 0.02em;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background-color: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* TipTap Editor Styles */
+.tiptap-editor {
+  @apply border border-gray-300 rounded-lg overflow-hidden;
+}
+
+.tiptap-editor .ProseMirror {
+  @apply p-4 min-h-[300px] outline-none;
+}
+
+.tiptap-editor .ProseMirror p {
+  @apply mb-3;
+}
+
+.tiptap-editor .ProseMirror h1 {
+  @apply text-3xl font-bold mb-4;
+}
+
+.tiptap-editor .ProseMirror h2 {
+  @apply text-2xl font-bold mb-3;
+}
+
+.tiptap-editor .ProseMirror h3 {
+  @apply text-xl font-semibold mb-3;
+}
+
+.tiptap-editor .ProseMirror h4 {
+  @apply text-lg font-semibold mb-2;
+}
+
+.tiptap-editor .ProseMirror ul {
+  @apply list-disc pl-6 mb-3;
+}
+
+.tiptap-editor .ProseMirror ol {
+  @apply list-decimal pl-6 mb-3;
+}
+
+.tiptap-editor .ProseMirror blockquote {
+  @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 mb-3;
+}
+
+.tiptap-editor .ProseMirror a {
+  @apply text-blue-600 underline;
+}
+
+.tiptap-editor .ProseMirror img {
+  @apply max-w-full h-auto rounded-lg;
+}
+
+.tiptap-editor .ProseMirror table {
+  @apply w-full border-collapse mb-4;
+}
+
+.tiptap-editor .ProseMirror td,
+.tiptap-editor .ProseMirror th {
+  @apply border border-gray-300 p-2 text-left;
+}
+
+.tiptap-editor .ProseMirror th {
+  @apply bg-gray-100 font-semibold;
+}
+
+.tiptap-editor .ProseMirror code {
+  @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.tiptap-editor .ProseMirror pre {
+  @apply bg-gray-900 text-gray-100 p-4 rounded-lg mb-3 overflow-x-auto;
+}
+
+.tiptap-editor .ProseMirror pre code {
+  @apply bg-transparent text-inherit p-0;
+}
+
+/* Toolbar styles */
+.editor-toolbar {
+  @apply flex flex-wrap gap-1 p-2 border-b border-gray-200 bg-gray-50;
+}
+
+.editor-toolbar button {
+  @apply p-1.5 rounded hover:bg-gray-200 transition-colors text-sm;
+}
+
+.editor-toolbar button.is-active {
+  @apply bg-blue-100 text-blue-700;
+}
+
+/* Page content rendering */
+.page-content h1 { @apply text-4xl font-bold mb-6 mt-8; }
+.page-content h2 { @apply text-3xl font-bold mb-5 mt-7; }
+.page-content h3 { @apply text-2xl font-semibold mb-4 mt-6; }
+.page-content h4 { @apply text-xl font-semibold mb-3 mt-5; }
+.page-content p { @apply mb-4 leading-relaxed; }
+.page-content ul { @apply list-disc pl-6 mb-4; }
+.page-content ol { @apply list-decimal pl-6 mb-4; }
+.page-content li { @apply mb-1; }
+.page-content blockquote { @apply border-l-4 pl-4 italic text-gray-600 my-4; }
+.page-content a { color: var(--color-link); }
+.page-content a:hover { color: var(--color-link-hover); }
+.page-content img { @apply max-w-full h-auto rounded-lg my-4; }
+.page-content table { @apply w-full border-collapse my-4; }
+.page-content td, .page-content th { @apply border border-gray-300 p-3; }
+.page-content th { @apply bg-gray-50 font-semibold; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
