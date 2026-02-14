@@ -57,29 +57,41 @@ if (-not (Test-Path ".env")) {
 
     $jwtSecret = New-Secret
     $dbPassword = New-Password
+    $npmDbPassword = New-Password
 
     $envContent = @"
+###############################################################################
+# Moveo CMS Configuration - Generated $(Get-Date)
+###############################################################################
+
+# Domain
+DOMAIN=localhost
+
 # Database
 POSTGRES_USER=moveo
 POSTGRES_PASSWORD=$dbPassword
 POSTGRES_DB=moveo_cms
 DATABASE_URL=postgresql://moveo:${dbPassword}@postgres:5432/moveo_cms
 
-# JWT
+# JWT Authentication
 JWT_SECRET=$jwtSecret
+JWT_EXPIRES_IN=7d
 
-# Site
+# Site Settings
 SITE_NAME=Moveo BV
-PORT=4000
 NODE_ENV=production
+PORT=4000
 
-# Admin (first run only)
+# Admin Account (first run only)
 ADMIN_EMAIL=admin@moveo-bv.nl
 ADMIN_PASSWORD=Admin123!
 ADMIN_NAME=Administrator
 
 # Redis
 REDIS_URL=redis://redis:6379
+
+# Nginx Proxy Manager Database
+NPM_DB_PASSWORD=$npmDbPassword
 "@
 
     $envContent | Out-File -FilePath ".env" -Encoding UTF8 -NoNewline
@@ -88,11 +100,13 @@ REDIS_URL=redis://redis:6379
     Write-Host "✓ .env file already exists" -ForegroundColor Green
 }
 
-# Create uploads directory
-if (-not (Test-Path "backend\uploads")) {
-    New-Item -ItemType Directory -Path "backend\uploads" -Force | Out-Null
+# Create uploads and data directories
+@("backend\uploads", "data\portainer", "data\npm\data", "data\npm\letsencrypt", "data\npm\mysql") | ForEach-Object {
+    if (-not (Test-Path $_)) {
+        New-Item -ItemType Directory -Path $_ -Force | Out-Null
+    }
 }
-Write-Host "✓ Upload directory ready" -ForegroundColor Green
+Write-Host "✓ Directories ready" -ForegroundColor Green
 
 # Build and start
 Write-Host ""
@@ -114,11 +128,11 @@ if ($composeArgs[0] -eq "docker") {
 # Wait for health
 Write-Host ""
 Write-Host "→ Waiting for services to be ready..." -ForegroundColor Yellow
-$maxRetries = 60
+$maxRetries = 90
 $retry = 0
 while ($retry -lt $maxRetries) {
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost/api/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
+        $response = Invoke-WebRequest -Uri "http://localhost:8080/api/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
         if ($response.StatusCode -eq 200) { break }
     } catch { }
     $retry++
@@ -135,22 +149,37 @@ if ($retry -eq $maxRetries) {
 
 # Print info
 Write-Host ""
-Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║       INSTALLATION COMPLETE!             ║" -ForegroundColor Green
-Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Green
+Write-Host "║            INSTALLATION COMPLETE!                            ║" -ForegroundColor Green
+Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Website:       " -NoNewline -ForegroundColor Blue; Write-Host "http://localhost"
-Write-Host "  Admin Panel:   " -NoNewline -ForegroundColor Blue; Write-Host "http://localhost/admin"
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+Write-Host "                     ACCESS INFORMATION" -ForegroundColor Cyan
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Login Credentials:" -ForegroundColor Yellow
-Write-Host "  Email:         admin@moveo-bv.nl"
-Write-Host "  Password:      Admin123!"
+Write-Host "  Moveo CMS:" -ForegroundColor Yellow
+Write-Host "    Website:       http://localhost:8080"
+Write-Host "    Admin Panel:   http://localhost:8080/admin"
+Write-Host "    Email:         admin@moveo-bv.nl"
+Write-Host "    Password:      Admin123!"
 Write-Host ""
-Write-Host "  ⚠ Change the admin password after first login!" -ForegroundColor Red
+Write-Host "  Nginx Proxy Manager:" -ForegroundColor Yellow
+Write-Host "    Admin Panel:   http://localhost:81"
+Write-Host "    Email:         admin@example.com"
+Write-Host "    Password:      changeme"
 Write-Host ""
-Write-Host "  Commands:" -ForegroundColor Blue
-Write-Host "  Stop:          $COMPOSE down"
-Write-Host "  Start:         $COMPOSE up -d"
-Write-Host "  Logs:          $COMPOSE logs -f"
-Write-Host "  Rebuild:       $COMPOSE up -d --build"
+Write-Host "  Portainer (Docker Management):" -ForegroundColor Yellow
+Write-Host "    Admin Panel:   https://localhost:9443"
+Write-Host "    Create admin account on first visit"
+Write-Host ""
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+Write-Host "                     USEFUL COMMANDS" -ForegroundColor Cyan  
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  View logs:       $COMPOSE logs -f"
+Write-Host "  Stop:            $COMPOSE down"
+Write-Host "  Start:           $COMPOSE up -d"
+Write-Host "  Rebuild:         $COMPOSE up -d --build"
+Write-Host ""
+Write-Host "  ⚠ IMPORTANT: Change all default passwords after first login!" -ForegroundColor Red
 Write-Host ""

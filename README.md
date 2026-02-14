@@ -1,6 +1,6 @@
 # Moveo CMS
 
-Een compleet, modern Content Management System gebouwd met React, Node.js, en PostgreSQL. Draait volledig in Docker.
+Een compleet, modern Content Management System gebouwd met React, Node.js, en PostgreSQL. Draait volledig in Docker met Nginx Proxy Manager voor SSL en Portainer voor Docker management.
 
 ## Features
 
@@ -25,41 +25,70 @@ Een compleet, modern Content Management System gebouwd met React, Node.js, en Po
 | Backend | Node.js + Express + Prisma ORM |
 | Database | PostgreSQL 16 |
 | Cache | Redis 7 |
-| Reverse Proxy | Nginx |
+| Reverse Proxy | Nginx + Nginx Proxy Manager |
+| SSL | Let's Encrypt (via NPM) |
+| Docker Management | Portainer CE |
 | Container | Docker + Docker Compose |
 
-## Quick Start
+## Quick Start (Linux/Ubuntu)
 
-### Windows
+```bash
+# Clone the repository
+git clone <repository-url>
+cd moveo
+
+# Make installer executable and run
+chmod +x install.sh
+sudo ./install.sh
+```
+
+The installer will automatically:
+1. Update the system (`apt update && upgrade`)
+2. Install Docker and Docker Compose
+3. Configure UFW firewall
+4. Generate secure secrets and create `.env`
+5. Build all Docker images
+6. Start all services (Moveo CMS, Nginx Proxy Manager, Portainer)
+7. Display access URLs and credentials
+
+### Windows (Development)
 ```powershell
 .\install.ps1
 ```
 
-### Linux / macOS
-```bash
-chmod +x install.sh
-./install.sh
-```
+## Access After Installation
 
-The installer will:
-1. Generate secure secrets and create `.env`
-2. Build all Docker images
-3. Start all services
-4. Run database migrations and seed data
-5. Display login credentials
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Moveo CMS** | `http://SERVER_IP:8080` | Main website |
+| **Moveo Admin** | `http://SERVER_IP:8080/admin` | CMS admin panel |
+| **Nginx Proxy Manager** | `http://SERVER_IP:81` | Domain & SSL management |
+| **Portainer** | `https://SERVER_IP:9443` | Docker management |
 
-## Access
+### Default Credentials
 
-| URL | Description |
-|-----|-------------|
-| `http://localhost` | Public website |
-| `http://localhost/admin` | Admin panel |
+**Moveo CMS Admin:**
+- Email: `admin@moveo-bv.nl`
+- Password: `Admin123!`
 
-### Default Login
-- **Email:** `admin@moveo-bv.nl`
-- **Password:** `Admin123!`
+**Nginx Proxy Manager:**
+- Email: `admin@example.com`
+- Password: `changeme`
 
-> ⚠️ Change the admin password after first login!
+**Portainer:** Create admin account on first visit
+
+> ⚠️ **IMPORTANT:** Change all default passwords after first login!
+
+## Domain & SSL Setup
+
+1. Point your domain's DNS A record to your server IP
+2. Open Nginx Proxy Manager: `http://SERVER_IP:81`
+3. Login and change default credentials
+4. Add new Proxy Host:
+   - **Domain:** your-domain.com
+   - **Forward Hostname:** nginx
+   - **Forward Port:** 80
+   - **SSL:** Request new SSL certificate with Let's Encrypt
 
 ## Architecture
 
@@ -103,10 +132,13 @@ moveo/
 
 | Service | Port | Description |
 |---------|------|-------------|
-| nginx | 80 | Reverse proxy |
-| backend | 4000 (internal) | API server |
-| postgres | 5432 (internal) | Database |
-| redis | 6379 (internal) | Cache |
+| npm | 80, 443, 81 | Nginx Proxy Manager (reverse proxy, SSL) |
+| npm-db | internal | MariaDB for NPM |
+| portainer | 9443 | Docker management UI |
+| nginx | 8080 | Moveo frontend + reverse proxy to backend |
+| backend | 4000 (internal) | Moveo API server |
+| postgres | 5432 (internal) | PostgreSQL database |
+| redis | 6379 (internal) | Redis cache |
 
 ## Commands
 

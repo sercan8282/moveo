@@ -1,10 +1,64 @@
 services:
+  # =============================================================================
+  # Nginx Proxy Manager - Handles domains, SSL certificates, reverse proxy
+  # =============================================================================
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80'     # HTTP
+      - '443:443'   # HTTPS
+      - '81:81'     # Admin Panel
+    environment:
+      DB_MYSQL_HOST: npm-db
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: npm
+      DB_MYSQL_PASSWORD: ${NPM_DB_PASSWORD:-npm_secret_2026}
+      DB_MYSQL_NAME: npm
+    volumes:
+      - ./data/npm/data:/data
+      - ./data/npm/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - npm-db
+    networks:
+      - moveo_network
+
+  npm-db:
+    image: 'jc21/mariadb-aria:latest'
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${NPM_DB_PASSWORD:-npm_secret_2026}
+      MYSQL_DATABASE: npm
+      MYSQL_USER: npm
+      MYSQL_PASSWORD: ${NPM_DB_PASSWORD:-npm_secret_2026}
+    volumes:
+      - ./data/npm/mysql:/var/lib/mysql
+    networks:
+      - moveo_network
+
+  # =============================================================================
+  # Portainer - Docker Management UI
+  # =============================================================================
+  portainer:
+    image: portainer/portainer-ce:latest
+    restart: unless-stopped
+    ports:
+      - '9443:9443'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/portainer:/data
+    networks:
+      - moveo_network
+
+  # =============================================================================
+  # Moveo CMS - Nginx (Frontend + Reverse Proxy to Backend)
+  # =============================================================================
   nginx:
     build:
       context: .
       dockerfile: nginx/Dockerfile
     ports:
-      - "8888:80"
+      - "8080:80"
     volumes:
       - uploads_data:/var/www/uploads
     depends_on:
@@ -14,6 +68,9 @@ services:
       - moveo_network
     restart: unless-stopped
 
+  # =============================================================================
+  # Moveo CMS - Backend API (Node.js + Express + Prisma)
+  # =============================================================================
   backend:
     build:
       context: ./backend
@@ -45,6 +102,9 @@ services:
       retries: 5
       start_period: 30s
 
+  # =============================================================================
+  # PostgreSQL Database
+  # =============================================================================
   postgres:
     image: postgres:16-alpine
     environment:
@@ -62,6 +122,9 @@ services:
       timeout: 5s
       retries: 5
 
+  # =============================================================================
+  # Redis Cache
+  # =============================================================================
   redis:
     image: redis:7-alpine
     volumes:
