@@ -8,3 +8,6 @@ dist
 build
 .vscode
 .idea
+
+# Runtime data (Docker volumes)
+data/
