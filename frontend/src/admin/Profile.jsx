@@ -41,7 +41,7 @@ export default function Profile() {
 
     setChangingPassword(true);
     try {
-      await api.put('/auth/change-password', {
+      await api.post('/auth/change-password', {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       });
