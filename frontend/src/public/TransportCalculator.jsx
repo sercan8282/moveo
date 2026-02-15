@@ -526,30 +526,33 @@ export default function TransportCalculator() {
               </p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {vehicleTypes.map(vt => (
-                  <button key={vt.id}
-                    onClick={() => setSelectedVehicle(vt)}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      selectedVehicle?.id === vt.id ? 'shadow-md' : 'hover:shadow-sm'
-                    }`}
-                    style={{
-                      borderColor: selectedVehicle?.id === vt.id ? 'var(--color-primary, #2563eb)' : 'var(--color-border, #e2e8f0)',
-                      backgroundColor: selectedVehicle?.id === vt.id ? 'var(--color-primary-light, #eff6ff)' : 'var(--color-surface, #fff)'
-                    }}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">{vt.icon || '🚛'}</span>
-                      <div>
-                        <div className="font-semibold" style={{ color: 'var(--color-text, #0f172a)' }}>{vt.name}</div>
-                        {vt.description && (
-                          <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-light, #64748b)' }}>{vt.description}</div>
-                        )}
-                        <div className="text-xs mt-1" style={{ color: 'var(--color-text-light, #64748b)' }}>
-                          Vanaf €{(isDomestic ? vt.pricePerKmDomestic : vt.pricePerKmInternational).toFixed(2)}/km
+                {vehicleTypes.map(vt => {
+                  const isSelected = selectedVehicle?.id === vt.id;
+                  return (
+                    <button key={vt.id}
+                      onClick={() => setSelectedVehicle(vt)}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        isSelected ? 'shadow-md' : 'hover:shadow-sm'
+                      }`}
+                      style={{
+                        borderColor: isSelected ? 'var(--color-primary, #2563eb)' : 'var(--color-border, #e2e8f0)',
+                        backgroundColor: isSelected ? 'var(--color-primary, #2563eb)' : 'var(--color-surface, #fff)'
+                      }}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{vt.icon || '🚛'}</span>
+                        <div>
+                          <div className="font-semibold" style={{ color: isSelected ? '#fff' : 'var(--color-text, #0f172a)' }}>{vt.name}</div>
+                          {vt.description && (
+                            <div className="text-xs mt-0.5" style={{ color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--color-text-light, #64748b)' }}>{vt.description}</div>
+                          )}
+                          <div className="text-xs mt-1" style={{ color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--color-text-light, #64748b)' }}>
+                            Vanaf €{(isDomestic ? vt.pricePerKmDomestic : vt.pricePerKmInternational).toFixed(2)}/km
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
