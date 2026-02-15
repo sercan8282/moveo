@@ -160,8 +160,8 @@ export default function MenuManager() {
     setMenuItems(newOrder);
 
     try {
-      await api.put(`/menus/${selectedMenu.id}/items/reorder`, {
-        items: newOrder.map((item, idx) => ({ id: item.id, order: idx }))
+      await api.put(`/menus/${selectedMenu.id}/reorder`, {
+        items: newOrder.map((item, idx) => ({ id: item.id, sortOrder: idx }))
       });
     } catch (error) {
       toast.error(t('error'));
