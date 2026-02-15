@@ -425,7 +425,7 @@ export default function BlockEditor({ block, onChange }) {
                     onChange={e => {
                       const items = [...block.data.items]; items[i] = { ...items[i], description: e.target.value }; onChange({ items });
                     }} className="w-full px-2 py-1 border rounded text-xs" />
-                  <input type="url" value={item.link || ''} placeholder="Link URL"
+                  <input type="text" value={item.link || ''} placeholder="Link URL (bijv. /diensten of https://...)"
                     onChange={e => {
                       const items = [...block.data.items]; items[i] = { ...items[i], link: e.target.value }; onChange({ items });
                     }} className="w-full px-2 py-1 border rounded text-xs" />
