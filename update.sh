@@ -34,6 +34,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="${SCRIPT_DIR}/backups"
 LOG_FILE="${BACKUP_DIR}/update-$(date +%Y%m%d-%H%M%S).log"
 COMPOSE_PROJECT="${COMPOSE_PROJECT_NAME:-moveo}"
+COMPOSE_CMD=""  # Will be set in check_prerequisites
 
 # Parse arguments
 DRY_RUN=false
@@ -102,11 +103,16 @@ check_prerequisites() {
         exit 1
     fi
     
-    # Check if docker-compose is available
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    # Check if docker compose is available (prefer plugin over standalone)
+    if docker compose version &> /dev/null; then
+        COMPOSE_CMD="docker compose"
+    elif command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
+    else
         log ERROR "Docker Compose is not installed"
         exit 1
     fi
+    log INFO "Using: $COMPOSE_CMD"
     
     # Check if git is available
     if ! command -v git &> /dev/null; then
@@ -251,15 +257,15 @@ rebuild_images() {
     
     # Build all images
     log INFO "Building backend image..."
-    docker-compose build --no-cache backend
+    $COMPOSE_CMD build --no-cache backend
     
     log INFO "Building nginx image..."
-    docker-compose build --no-cache nginx
+    $COMPOSE_CMD build --no-cache nginx
     
     # Also rebuild site-backend if it exists in compose
     if grep -q "site-backend" docker-compose.yml; then
         log INFO "Building site-backend image..."
-        docker-compose build --no-cache site-backend 2>/dev/null || true
+        $COMPOSE_CMD build --no-cache site-backend 2>/dev/null || true
     fi
     
     log INFO "Images rebuilt ✓"
@@ -272,13 +278,13 @@ update_containers() {
     cd "$SCRIPT_DIR"
     
     if [ "$DRY_RUN" = true ]; then
-        log INFO "[DRY-RUN] Would update containers with: docker-compose up -d"
+        log INFO "[DRY-RUN] Would update containers with: $COMPOSE_CMD up -d"
         return
     fi
     
     # Stop and recreate containers (keeps volumes intact)
     log INFO "Recreating containers..."
-    docker-compose up -d --force-recreate
+    $COMPOSE_CMD up -d --force-recreate
     
     # Wait for services to be healthy
     log INFO "Waiting for services to be healthy..."
@@ -289,7 +295,7 @@ update_containers() {
     local attempt=0
     
     while [ $attempt -lt $max_attempts ]; do
-        if docker-compose ps | grep -q "healthy"; then
+        if $COMPOSE_CMD ps | grep -q "healthy"; then
             break
         fi
         attempt=$((attempt + 1))
@@ -339,7 +345,7 @@ verify_update() {
     
     # Check container status
     log INFO "Container status:"
-    docker-compose ps
+    $COMPOSE_CMD ps
     
     # Check backend health
     local nginx_port=$(grep "^NGINX_PORT=" "$SCRIPT_DIR/.env" | cut -d= -f2 || echo "8088")
