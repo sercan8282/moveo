@@ -1,22 +1,21 @@
 #!/bin/bash
 # =============================================================================
-# Moveo CMS - Production Update Script
+# Moveo CMS - Installation Script
 # =============================================================================
-# This script safely updates a production Moveo CMS installation while
-# preserving all existing data, configurations, and uploaded files.
+# This script installs Moveo CMS on a fresh Linux server (Ubuntu/Debian)
 #
 # Usage:
-#   ./update.sh              # Normal update
-#   ./update.sh --dry-run    # Preview what would happen
-#   ./update.sh --rollback   # Rollback to previous version
-#   ./update.sh --force      # Force update even if git has uncommitted changes
+#   chmod +x install.sh
+#   sudo ./install.sh
 #
-# What this script preserves:
-#   - All database data (PostgreSQL volumes)
-#   - Uploaded media files (uploads volume)
-#   - Environment configuration (.env file)
-#   - SSL certificates (from NPM)
-#   - All custom settings in the database
+# What this script does:
+#   1. Updates the system
+#   2. Installs Docker and Docker Compose
+#   3. Configures UFW firewall
+#   4. Generates secure secrets and creates .env
+#   5. Builds all Docker images
+#   6. Starts all services
+#   7. Displays access URLs and credentials
 #
 # =============================================================================
 
@@ -27,41 +26,12 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKUP_DIR="${SCRIPT_DIR}/backups"
-LOG_FILE="${BACKUP_DIR}/update-$(date +%Y%m%d-%H%M%S).log"
-COMPOSE_PROJECT="${COMPOSE_PROJECT_NAME:-moveo}"
-
-# Parse arguments
-DRY_RUN=false
-ROLLBACK=false
-FORCE=false
-
-for arg in "$@"; do
-    case $arg in
-        --dry-run)
-            DRY_RUN=true
-            ;;
-        --rollback)
-            ROLLBACK=true
-            ;;
-        --force)
-            FORCE=true
-            ;;
-        --help|-h)
-            echo "Usage: $0 [--dry-run] [--rollback] [--force]"
-            echo ""
-            echo "Options:"
-            echo "  --dry-run   Preview what would happen without making changes"
-            echo "  --rollback  Rollback to the previous version"
-            echo "  --force     Force update even with uncommitted changes"
-            exit 0
-            ;;
-    esac
-done
+LOG_FILE="${SCRIPT_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
 
 # Logging function
 log() {
@@ -80,392 +50,256 @@ log() {
             echo -e "${RED}[ERROR]${NC} $message"
             ;;
         STEP)
-            echo -e "\n${BLUE}==>${NC} $message"
+            echo -e "\n${BLUE}==>${NC} ${CYAN}$message${NC}"
             ;;
     esac
     
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE" 2>/dev/null || true
 }
 
-# Check prerequisites
-check_prerequisites() {
-    log STEP "Checking prerequisites..."
-    
-    # Check if running as root (not recommended) or with docker group
-    if [ "$EUID" -eq 0 ]; then
-        log WARN "Running as root is not recommended. Consider using a user with docker group access."
-    fi
-    
-    # Check if docker is available
-    if ! command -v docker &> /dev/null; then
-        log ERROR "Docker is not installed or not in PATH"
-        exit 1
-    fi
-    
-    # Check if docker-compose is available
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-        log ERROR "Docker Compose is not installed"
-        exit 1
-    fi
-    
-    # Check if git is available
-    if ! command -v git &> /dev/null; then
-        log ERROR "Git is not installed"
-        exit 1
-    fi
-    
-    # Check if we're in a git repository
-    if [ ! -d "$SCRIPT_DIR/.git" ]; then
-        log ERROR "This doesn't appear to be a git repository"
-        exit 1
-    fi
-    
-    # Check for .env file
-    if [ ! -f "$SCRIPT_DIR/.env" ]; then
-        log ERROR ".env file not found. Please copy .env.example to .env and configure it."
-        exit 1
-    fi
-    
-    log INFO "Prerequisites check passed ✓"
+# Generate secure random string
+generate_secret() {
+    openssl rand -base64 32 | tr -d '/+=' | head -c 32
 }
 
-# Create backup
-create_backup() {
-    log STEP "Creating backup..."
+# Check if running as root
+check_root() {
+    if [ "$EUID" -ne 0 ]; then
+        log ERROR "Please run this script as root (sudo ./install.sh)"
+        exit 1
+    fi
+}
+
+# Update system
+update_system() {
+    log STEP "Updating system packages..."
     
-    mkdir -p "$BACKUP_DIR"
+    apt-get update -qq
+    apt-get upgrade -y -qq
     
-    local backup_name="backup-$(date +%Y%m%d-%H%M%S)"
-    local backup_path="${BACKUP_DIR}/${backup_name}"
+    log INFO "System updated ✓"
+}
+
+# Install Docker
+install_docker() {
+    log STEP "Installing Docker..."
     
-    mkdir -p "$backup_path"
-    
-    # Save current git commit
-    git -C "$SCRIPT_DIR" rev-parse HEAD > "$backup_path/git-commit.txt"
-    log INFO "Saved current commit: $(cat $backup_path/git-commit.txt)"
-    
-    # Backup .env file
-    cp "$SCRIPT_DIR/.env" "$backup_path/.env.backup"
-    log INFO "Backed up .env file"
-    
-    # Backup docker-compose.yml
-    cp "$SCRIPT_DIR/docker-compose.yml" "$backup_path/docker-compose.yml.backup"
-    log INFO "Backed up docker-compose.yml"
-    
-    # Create database dump
-    log INFO "Creating database dump..."
-    if docker ps --format '{{.Names}}' | grep -q "${COMPOSE_PROJECT}-postgres"; then
-        docker exec ${COMPOSE_PROJECT}-postgres pg_dump -U moveo moveo_cms > "$backup_path/database.sql" 2>/dev/null || {
-            log WARN "Could not create database dump. Container might not be running."
-        }
-        if [ -f "$backup_path/database.sql" ]; then
-            log INFO "Database dump created: $(du -h $backup_path/database.sql | cut -f1)"
-        fi
+    if command -v docker &> /dev/null; then
+        log INFO "Docker is already installed"
+        docker --version
     else
-        log WARN "PostgreSQL container not running, skipping database dump"
+        # Install prerequisites
+        apt-get install -y -qq ca-certificates curl gnupg lsb-release
+        
+        # Add Docker's official GPG key
+        mkdir -p /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        
+        # Set up the repository
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+          $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+        
+        # Install Docker Engine
+        apt-get update -qq
+        apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plugin
+        
+        # Start and enable Docker
+        systemctl start docker
+        systemctl enable docker
+        
+        log INFO "Docker installed ✓"
     fi
     
-    # Save container state
-    docker ps -a --filter "name=${COMPOSE_PROJECT}" --format "{{.Names}}: {{.Status}}" > "$backup_path/container-state.txt"
-    log INFO "Saved container state"
-    
-    # Record the backup path for rollback
-    echo "$backup_path" > "${BACKUP_DIR}/latest-backup.txt"
-    
-    log INFO "Backup created at: $backup_path ✓"
-}
-
-# Check for uncommitted changes
-check_git_status() {
-    log STEP "Checking git status..."
-    
-    cd "$SCRIPT_DIR"
-    
-    # Ensure backups folder is in .gitignore
-    if ! grep -q "^backups/$" .gitignore 2>/dev/null; then
-        echo "backups/" >> .gitignore
-        log INFO "Added backups/ to .gitignore"
-    fi
-    
-    # Fetch latest from remote
-    log INFO "Fetching latest from remote..."
-    git fetch origin
-    
-    # Check for uncommitted changes (excluding untracked files in gitignored paths)
-    if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
-        if [ "$FORCE" = true ]; then
-            log WARN "Uncommitted changes detected but --force was used"
-        else
-            log ERROR "There are uncommitted changes in the repository."
-            log ERROR "Please commit or stash them first, or use --force to override."
-            git status --short
-            exit 1
-        fi
-    fi
-    
-    # Show what will be updated
-    local current=$(git rev-parse HEAD)
-    local remote=$(git rev-parse origin/main 2>/dev/null || git rev-parse origin/master)
-    
-    if [ "$current" = "$remote" ]; then
-        log INFO "Already up to date!"
-        if [ "$FORCE" != true ]; then
-            exit 0
-        fi
+    # Verify docker compose is available
+    if docker compose version &> /dev/null; then
+        log INFO "Docker Compose plugin is available"
     else
-        log INFO "Current commit: ${current:0:8}"
-        log INFO "Latest commit:  ${remote:0:8}"
-        log INFO ""
-        log INFO "Changes to be applied:"
-        git log --oneline HEAD..origin/main 2>/dev/null || git log --oneline HEAD..origin/master
+        log ERROR "Docker Compose plugin is not available"
+        exit 1
     fi
 }
 
-# Pull latest changes
-pull_updates() {
-    log STEP "Pulling latest changes..."
+# Configure firewall
+configure_firewall() {
+    log STEP "Configuring firewall..."
     
-    cd "$SCRIPT_DIR"
-    
-    if [ "$DRY_RUN" = true ]; then
-        log INFO "[DRY-RUN] Would pull: git pull origin main"
-        return
+    if command -v ufw &> /dev/null; then
+        # Allow SSH, HTTP, HTTPS, and management ports
+        ufw allow 22/tcp    # SSH
+        ufw allow 80/tcp    # HTTP
+        ufw allow 443/tcp   # HTTPS
+        ufw allow 81/tcp    # Nginx Proxy Manager Admin
+        ufw allow 9443/tcp  # Portainer
+        
+        # Enable firewall if not already enabled
+        if ! ufw status | grep -q "Status: active"; then
+            echo "y" | ufw enable
+        fi
+        
+        log INFO "Firewall configured ✓"
+    else
+        log WARN "UFW is not installed, skipping firewall configuration"
     fi
-    
-    # Stash any local changes to .env (shouldn't be in git but just in case)
-    git stash push -m "update-script-stash" -- .env 2>/dev/null || true
-    
-    # Pull the latest changes
-    git pull origin main 2>/dev/null || git pull origin master
-    
-    # Pop stash if we stashed anything
-    git stash pop 2>/dev/null || true
-    
-    log INFO "Code updated ✓"
 }
 
-# Rebuild images
-rebuild_images() {
-    log STEP "Rebuilding Docker images..."
+# Create .env file
+create_env_file() {
+    log STEP "Creating environment configuration..."
     
-    cd "$SCRIPT_DIR"
-    
-    if [ "$DRY_RUN" = true ]; then
-        log INFO "[DRY-RUN] Would rebuild images"
+    if [ -f "$SCRIPT_DIR/.env" ]; then
+        log WARN ".env file already exists, keeping existing configuration"
         return
     fi
     
-    # Build all images
-    log INFO "Building backend image..."
-    docker-compose build --no-cache backend
+    # Generate secrets
+    local postgres_password=$(generate_secret)
+    local jwt_secret=$(generate_secret)
+    local npm_db_password=$(generate_secret)
     
-    log INFO "Building nginx image..."
-    docker-compose build --no-cache nginx
+    # Get server IP
+    local server_ip=$(hostname -I | awk '{print $1}')
     
-    # Also rebuild site-backend if it exists in compose
-    if grep -q "site-backend" docker-compose.yml; then
-        log INFO "Building site-backend image..."
-        docker-compose build --no-cache site-backend 2>/dev/null || true
-    fi
+    cat > "$SCRIPT_DIR/.env" << EOF
+# =============================================================================
+# Moveo CMS - Environment Configuration
+# Generated on $(date)
+# =============================================================================
+
+# Project name (used as prefix for containers)
+COMPOSE_PROJECT_NAME=moveo
+
+# Server Configuration
+NGINX_PORT=8080
+SITE_NAME=moveo-cms
+DEFAULT_LANGUAGE=nl
+
+# PostgreSQL Database
+POSTGRES_USER=moveo
+POSTGRES_PASSWORD=${postgres_password}
+POSTGRES_DB=moveo_cms
+
+# JWT Authentication
+JWT_SECRET=${jwt_secret}
+JWT_EXPIRES_IN=7d
+
+# Nginx Proxy Manager Database
+NPM_DB_PASSWORD=${npm_db_password}
+EOF
+
+    chmod 600 "$SCRIPT_DIR/.env"
     
-    log INFO "Images rebuilt ✓"
+    log INFO "Environment file created ✓"
+    log INFO "PostgreSQL Password: ${postgres_password}"
+    log INFO "JWT Secret: ${jwt_secret}"
 }
 
-# Update containers
-update_containers() {
-    log STEP "Updating containers..."
+# Create data directories
+create_directories() {
+    log STEP "Creating data directories..."
+    
+    mkdir -p "$SCRIPT_DIR/data/npm/data"
+    mkdir -p "$SCRIPT_DIR/data/npm/letsencrypt"
+    mkdir -p "$SCRIPT_DIR/data/npm/mysql"
+    mkdir -p "$SCRIPT_DIR/data/portainer"
+    mkdir -p "$SCRIPT_DIR/data/postgres"
+    mkdir -p "$SCRIPT_DIR/backups"
+    
+    log INFO "Data directories created ✓"
+}
+
+# Build and start containers
+start_services() {
+    log STEP "Building Docker images..."
     
     cd "$SCRIPT_DIR"
     
-    if [ "$DRY_RUN" = true ]; then
-        log INFO "[DRY-RUN] Would update containers with: docker-compose up -d"
-        return
-    fi
+    # Build images
+    docker compose build --no-cache
     
-    # Stop and recreate containers (keeps volumes intact)
-    log INFO "Recreating containers..."
-    docker-compose up -d --force-recreate
+    log INFO "Docker images built ✓"
+    
+    log STEP "Starting services..."
+    
+    # Start all services
+    docker compose up -d
     
     # Wait for services to be healthy
-    log INFO "Waiting for services to be healthy..."
-    sleep 10
+    log INFO "Waiting for services to start..."
+    sleep 30
     
-    # Check health
+    # Check if backend is healthy
     local max_attempts=30
     local attempt=0
     
     while [ $attempt -lt $max_attempts ]; do
-        if docker-compose ps | grep -q "healthy"; then
+        if docker compose ps | grep -q "healthy"; then
             break
         fi
         attempt=$((attempt + 1))
         sleep 5
+        echo -n "."
     done
+    echo ""
     
-    log INFO "Containers updated ✓"
+    log INFO "Services started ✓"
 }
 
-# Run migrations
-run_migrations() {
-    log STEP "Running database migrations..."
+# Show completion message
+show_completion() {
+    local server_ip=$(hostname -I | awk '{print $1}')
     
-    if [ "$DRY_RUN" = true ]; then
-        log INFO "[DRY-RUN] Would run migrations"
-        return
-    fi
-    
-    # Wait for backend to be ready
-    sleep 5
-    
-    # Migrations run automatically on backend startup via entrypoint
-    # Just verify the backend is healthy
-    local max_attempts=30
-    local attempt=0
-    
-    while [ $attempt -lt $max_attempts ]; do
-        if curl -sf http://localhost:4000/api/health > /dev/null 2>&1; then
-            log INFO "Backend is healthy, migrations completed ✓"
-            return
-        fi
-        attempt=$((attempt + 1))
-        sleep 5
-    done
-    
-    log WARN "Backend health check timed out, but it may still be starting up"
-}
-
-# Verify update
-verify_update() {
-    log STEP "Verifying update..."
-    
-    if [ "$DRY_RUN" = true ]; then
-        log INFO "[DRY-RUN] Would verify update"
-        return
-    fi
-    
-    # Check container status
-    log INFO "Container status:"
-    docker-compose ps
-    
-    # Check backend health
-    local nginx_port=$(grep "^NGINX_PORT=" "$SCRIPT_DIR/.env" | cut -d= -f2 || echo "8088")
-    
-    if curl -sf "http://localhost:${nginx_port}/api/health" > /dev/null 2>&1; then
-        log INFO "Frontend proxy is working ✓"
-    else
-        log WARN "Frontend proxy health check failed"
-    fi
-    
-    # Show new version
-    log INFO ""
-    log INFO "Update completed successfully!"
-    log INFO "Current version: $(git rev-parse --short HEAD)"
-}
-
-# Rollback function
-do_rollback() {
-    log STEP "Starting rollback..."
-    
-    if [ ! -f "${BACKUP_DIR}/latest-backup.txt" ]; then
-        log ERROR "No backup found to rollback to"
-        exit 1
-    fi
-    
-    local backup_path=$(cat "${BACKUP_DIR}/latest-backup.txt")
-    
-    if [ ! -d "$backup_path" ]; then
-        log ERROR "Backup directory not found: $backup_path"
-        exit 1
-    fi
-    
-    log INFO "Rolling back to: $backup_path"
-    
-    # Get the commit to rollback to
-    local target_commit=$(cat "$backup_path/git-commit.txt")
-    log INFO "Target commit: $target_commit"
-    
-    if [ "$DRY_RUN" = true ]; then
-        log INFO "[DRY-RUN] Would rollback to commit $target_commit"
-        return
-    fi
-    
-    cd "$SCRIPT_DIR"
-    
-    # Reset to the backup commit
-    git reset --hard "$target_commit"
-    
-    # Restore .env if it differs
-    if [ -f "$backup_path/.env.backup" ]; then
-        cp "$backup_path/.env.backup" "$SCRIPT_DIR/.env"
-        log INFO "Restored .env file"
-    fi
-    
-    # Rebuild and restart
-    rebuild_images
-    update_containers
-    
-    # Restore database if needed
-    if [ -f "$backup_path/database.sql" ]; then
-        read -p "Restore database from backup? (y/N) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            log INFO "Restoring database..."
-            docker exec -i ${COMPOSE_PROJECT}-postgres psql -U moveo moveo_cms < "$backup_path/database.sql"
-            log INFO "Database restored ✓"
-        fi
-    fi
-    
-    log INFO "Rollback completed ✓"
-}
-
-# Cleanup old backups (keep last 5)
-cleanup_old_backups() {
-    log STEP "Cleaning up old backups..."
-    
-    cd "$BACKUP_DIR"
-    
-    # Keep only the 5 most recent backups
-    ls -dt backup-* 2>/dev/null | tail -n +6 | xargs -r rm -rf
-    
-    log INFO "Old backups cleaned up ✓"
+    echo ""
+    echo -e "${GREEN}========================================"
+    echo "  Moveo CMS Installation Complete!"
+    echo "========================================${NC}"
+    echo ""
+    echo -e "${CYAN}Access URLs:${NC}"
+    echo "  • Website:     http://${server_ip}:8080"
+    echo "  • Admin Panel: http://${server_ip}:8080/admin"
+    echo "  • NPM Admin:   http://${server_ip}:81"
+    echo "  • Portainer:   https://${server_ip}:9443"
+    echo ""
+    echo -e "${CYAN}Default Credentials:${NC}"
+    echo "  Moveo CMS Admin:"
+    echo "    Email:    admin@moveo-bv.nl"
+    echo "    Password: Admin123!"
+    echo ""
+    echo "  Nginx Proxy Manager:"
+    echo "    Email:    admin@example.com"
+    echo "    Password: changeme"
+    echo ""
+    echo "  Portainer:"
+    echo "    Create admin account on first visit"
+    echo ""
+    echo -e "${YELLOW}⚠️  IMPORTANT: Change all default passwords after first login!${NC}"
+    echo ""
+    echo -e "${CYAN}Useful Commands:${NC}"
+    echo "  • View logs:     docker compose logs -f"
+    echo "  • Stop services: docker compose down"
+    echo "  • Start services: docker compose up -d"
+    echo "  • Update:        ./update.sh"
+    echo ""
+    echo "Log file: $LOG_FILE"
+    echo ""
 }
 
 # Main execution
 main() {
     echo ""
-    echo "========================================"
-    echo "  Moveo CMS Update Script"
-    echo "========================================"
+    echo -e "${CYAN}========================================"
+    echo "  Moveo CMS Installation Script"
+    echo "========================================${NC}"
     echo ""
     
-    mkdir -p "$BACKUP_DIR"
-    
-    if [ "$ROLLBACK" = true ]; then
-        do_rollback
-        exit 0
-    fi
-    
-    if [ "$DRY_RUN" = true ]; then
-        log INFO "Running in DRY-RUN mode - no changes will be made"
-    fi
-    
-    check_prerequisites
-    create_backup
-    check_git_status
-    pull_updates
-    rebuild_images
-    update_containers
-    run_migrations
-    verify_update
-    cleanup_old_backups
-    
-    echo ""
-    echo "========================================"
-    echo "  Update Complete!"
-    echo "========================================"
-    echo ""
-    echo "Log file: $LOG_FILE"
-    echo ""
+    check_root
+    update_system
+    install_docker
+    configure_firewall
+    create_directories
+    create_env_file
+    start_services
+    show_completion
 }
 
 # Run main
