@@ -107,7 +107,7 @@ router.delete('/:id', authenticate, canAccess('menus'), async (req, res) => {
 // Add menu item
 router.post('/:id/items', authenticate, canAccess('menus'), async (req, res) => {
   try {
-    const { label, url, pageId, parentId, target, cssClass, icon } = req.body;
+    const { label, url, pageId, parentId, target, cssClass, icon, styles } = req.body;
 
     if (!label) {
       return res.status(400).json({ error: 'Label is verplicht' });
@@ -128,6 +128,7 @@ router.post('/:id/items', authenticate, canAccess('menus'), async (req, res) => 
         target: target || '_self',
         cssClass: cssClass || null,
         icon: icon || null,
+        styles: styles || null,
         sortOrder: (maxOrder._max.sortOrder || 0) + 1
       }
     });
@@ -139,10 +140,10 @@ router.post('/:id/items', authenticate, canAccess('menus'), async (req, res) => 
   }
 });
 
-// Update menu item
+// Update menu item (both route patterns supported)
 router.put('/items/:itemId', authenticate, canAccess('menus'), async (req, res) => {
   try {
-    const { label, url, pageId, parentId, target, sortOrder, cssClass, icon } = req.body;
+    const { label, url, pageId, parentId, target, sortOrder, cssClass, icon, styles } = req.body;
 
     const item = await prisma.menuItem.update({
       where: { id: parseInt(req.params.itemId) },
@@ -154,7 +155,8 @@ router.put('/items/:itemId', authenticate, canAccess('menus'), async (req, res) 
         target: target || '_self',
         sortOrder: sortOrder !== undefined ? parseInt(sortOrder) : undefined,
         cssClass: cssClass || null,
-        icon: icon || null
+        icon: icon || null,
+        styles: styles || null
       }
     });
 
@@ -162,6 +164,44 @@ router.put('/items/:itemId', authenticate, canAccess('menus'), async (req, res) 
   } catch (error) {
     console.error('Update menu item error:', error);
     res.status(500).json({ error: 'Fout bij bijwerken menu-item' });
+  }
+});
+
+// Update menu item (alternative route pattern)
+router.put('/:id/items/:itemId', authenticate, canAccess('menus'), async (req, res) => {
+  try {
+    const { label, url, pageId, parentId, target, sortOrder, cssClass, icon, styles } = req.body;
+
+    const item = await prisma.menuItem.update({
+      where: { id: parseInt(req.params.itemId) },
+      data: {
+        label,
+        url: url || null,
+        pageId: pageId ? parseInt(pageId) : null,
+        parentId: parentId !== undefined ? (parentId ? parseInt(parentId) : null) : undefined,
+        target: target || '_self',
+        sortOrder: sortOrder !== undefined ? parseInt(sortOrder) : undefined,
+        cssClass: cssClass || null,
+        icon: icon || null,
+        styles: styles || null
+      }
+    });
+
+    res.json(item);
+  } catch (error) {
+    console.error('Update menu item error:', error);
+    res.status(500).json({ error: 'Fout bij bijwerken menu-item' });
+  }
+});
+
+// Delete menu item (alternative route pattern)
+router.delete('/:id/items/:itemId', authenticate, canAccess('menus'), async (req, res) => {
+  try {
+    await prisma.menuItem.delete({ where: { id: parseInt(req.params.itemId) } });
+    res.json({ success: true, message: 'Menu-item verwijderd' });
+  } catch (error) {
+    console.error('Delete menu item error:', error);
+    res.status(500).json({ error: 'Fout bij verwijderen menu-item' });
   }
 });
 

@@ -7,6 +7,7 @@ const { PrismaClient } = require('@prisma/client');
 const { authenticate } = require('../middleware/auth');
 const { canAccess } = require('../middleware/roles');
 const { processImage, resizeCustom } = require('../utils/imageProcessor');
+const { processVideo } = require('../utils/videoProcessor');
 const config = require('../config');
 
 const router = express.Router();
@@ -91,7 +92,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// Upload image
+// Upload image or video
 router.post('/upload', authenticate, canAccess('media'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -99,7 +100,27 @@ router.post('/upload', authenticate, canAccess('media'), upload.single('file'), 
     }
 
     const filePath = req.file.path;
-    const { variants, originalWidth, originalHeight } = await processImage(filePath, req.file.filename);
+    const isVideo = req.file.mimetype.startsWith('video/');
+    
+    let variants = {};
+    let originalWidth = null;
+    let originalHeight = null;
+
+    if (isVideo) {
+      // Process video - create compressed variants
+      const result = await processVideo(filePath, req.file.filename);
+      variants = result.variants;
+      if (result.metadata) {
+        originalWidth = result.metadata.width;
+        originalHeight = result.metadata.height;
+      }
+    } else {
+      // Process image - create size variants  
+      const result = await processImage(filePath, req.file.filename);
+      variants = result.variants;
+      originalWidth = result.originalWidth;
+      originalHeight = result.originalHeight;
+    }
 
     const media = await prisma.media.create({
       data: {
@@ -122,7 +143,7 @@ router.post('/upload', authenticate, canAccess('media'), upload.single('file'), 
   }
 });
 
-// Upload multiple images
+// Upload multiple images/videos
 router.post('/upload-multiple', authenticate, canAccess('media'), upload.array('files', 20), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
@@ -131,7 +152,24 @@ router.post('/upload-multiple', authenticate, canAccess('media'), upload.array('
 
     const results = [];
     for (const file of req.files) {
-      const { variants, originalWidth, originalHeight } = await processImage(file.path, file.filename);
+      const isVideo = file.mimetype.startsWith('video/');
+      let variants = {};
+      let originalWidth = null;
+      let originalHeight = null;
+
+      if (isVideo) {
+        const result = await processVideo(file.path, file.filename);
+        variants = result.variants;
+        if (result.metadata) {
+          originalWidth = result.metadata.width;
+          originalHeight = result.metadata.height;
+        }
+      } else {
+        const result = await processImage(file.path, file.filename);
+        variants = result.variants;
+        originalWidth = result.originalWidth;
+        originalHeight = result.originalHeight;
+      }
 
       const media = await prisma.media.create({
         data: {

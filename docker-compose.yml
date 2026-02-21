@@ -57,8 +57,9 @@ services:
     build:
       context: .
       dockerfile: nginx/Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-moveo}-nginx
     ports:
-      - "8080:80"
+      - "${NGINX_PORT:-8088}:80"
     volumes:
       - uploads_data:/var/www/uploads
     depends_on:
@@ -75,6 +76,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-moveo}-backend
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-moveo}:${POSTGRES_PASSWORD:-moveo_secret_2026}@postgres:5432/${POSTGRES_DB:-moveo_cms}?schema=public
       - REDIS_URL=redis://redis:6379
@@ -87,6 +89,7 @@ services:
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-nl}
     volumes:
       - uploads_data:/app/uploads
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for site orchestration
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,6 +110,7 @@ services:
   # =============================================================================
   postgres:
     image: postgres:16-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-moveo}-postgres
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-moveo}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-moveo_secret_2026}
@@ -127,6 +131,7 @@ services:
   # =============================================================================
   redis:
     image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-moveo}-redis
     volumes:
       - redis_data:/data
     networks:
@@ -137,6 +142,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # =============================================================================
+  # Site Backend Image Builder (for multi-site deployments)
+  # This service only builds the image, it doesn't run
+  # =============================================================================
+  site-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.site
+    image: moveo-site-backend:latest
+    profiles:
+      - build-only
+    command: ["echo", "Image built successfully"]
 
 volumes:
   postgres_data:

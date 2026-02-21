@@ -57,6 +57,7 @@ export const translations = {
     vehicleTypes: 'Voertuigtypes',
     quotes: 'Offertes',
     emailSettings: 'E-mail',
+    sites: 'Sites Beheer',
     
     // Dashboard
     welcomeBack: 'Welkom terug',
@@ -249,6 +250,7 @@ export const translations = {
     vehicleTypes: 'Vehicle Types',
     quotes: 'Quotes',
     emailSettings: 'Email',
+    sites: 'Site Manager',
     
     // Dashboard
     welcomeBack: 'Welcome back',

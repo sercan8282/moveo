@@ -342,3 +342,310 @@ h1, h2, h3, h4, h5, h6 {
 .animate-slide-in {
   animation: slideIn 0.3s ease-out;
 }
+/* ═══ Menu Item Shapes ═══ */
+
+/* None - no special shape (default) */
+.menu-shape-none {
+  /* Default style - no border */
+}
+
+/* Square - bordered square shape */
+.menu-shape-square {
+  position: relative;
+  border: 2px solid currentColor;
+  padding: 8px 16px !important;
+}
+.menu-shape-square:hover,
+.menu-shape-square.nav-active {
+  border-color: var(--navbar-hover-color, #3b82f6);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Round - rounded pill shape */
+.menu-shape-round {
+  position: relative;
+  border: 2px solid currentColor;
+  border-radius: 9999px !important;
+  padding: 8px 20px !important;
+}
+.menu-shape-round:hover,
+.menu-shape-round.nav-active {
+  border-color: var(--navbar-hover-color, #3b82f6);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Parallelogram - skewed slanted shape */
+.menu-shape-parallelogram {
+  position: relative;
+  padding: 8px 20px !important;
+}
+.menu-shape-parallelogram::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid currentColor;
+  transform: skewX(-12deg);
+  transition: all 0.3s ease;
+}
+.menu-shape-parallelogram:hover::before,
+.menu-shape-parallelogram.nav-active::before {
+  border-color: var(--navbar-hover-color, #3b82f6);
+  background: rgba(59, 130, 246, 0.1);
+}
+/* Keep text straight */
+.menu-shape-parallelogram > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ═══ Floating Menu Styles ═══ */
+
+.floating-menu {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-menu-left {
+  left: 12px;
+}
+
+.floating-menu-right {
+  right: 12px;
+}
+
+.floating-menu-item {
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+/* Floating item shapes */
+.floating-item-none {
+  border-radius: 0;
+}
+
+.floating-item-square {
+  border-radius: 8px;
+}
+
+.floating-item-round {
+  border-radius: 9999px;
+}
+
+.floating-item-parallelogram {
+  transform: skewX(-12deg);
+  border-radius: 6px;
+}
+
+/* Floating item effects */
+.floating-menu-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* All items change to hover color on hover */
+.floating-menu-item:hover {
+  background-color: var(--hover-color) !important;
+}
+
+.floating-effect-none:hover {
+  filter: brightness(1.1);
+}
+
+.floating-effect-scale {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+.floating-effect-scale:hover {
+  transform: scale(1.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+.floating-item-parallelogram.floating-effect-scale:hover {
+  transform: skewX(-12deg) scale(1.15);
+}
+
+.floating-effect-glow {
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+.floating-effect-glow:hover {
+  box-shadow: 0 0 30px var(--hover-color, #3b82f6), 0 0 60px var(--hover-color, #3b82f6)50, 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.floating-effect-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+.floating-effect-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.35);
+}
+.floating-item-parallelogram.floating-effect-lift:hover {
+  transform: skewX(-12deg) translateY(-6px);
+}
+
+/* Bounce effect */
+.floating-effect-bounce {
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+.floating-effect-bounce:hover {
+  animation: bounceEffect 0.5s ease;
+}
+@keyframes bounceEffect {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-8px); }
+  50% { transform: translateY(-4px); }
+  75% { transform: translateY(-6px); }
+}
+.floating-item-parallelogram.floating-effect-bounce:hover {
+  animation: bounceEffectSkew 0.5s ease;
+}
+@keyframes bounceEffectSkew {
+  0%, 100% { transform: skewX(-12deg) translateY(0); }
+  25% { transform: skewX(-12deg) translateY(-8px); }
+  50% { transform: skewX(-12deg) translateY(-4px); }
+  75% { transform: skewX(-12deg) translateY(-6px); }
+}
+
+/* Pulse effect */
+.floating-effect-pulse {
+  transition: background-color 0.3s ease;
+}
+.floating-effect-pulse:hover {
+  animation: pulseEffect 0.8s ease infinite;
+}
+@keyframes pulseEffect {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+  50% { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); }
+}
+.floating-item-parallelogram.floating-effect-pulse:hover {
+  animation: pulseEffectSkew 0.8s ease infinite;
+}
+@keyframes pulseEffectSkew {
+  0%, 100% { transform: skewX(-12deg) scale(1); }
+  50% { transform: skewX(-12deg) scale(1.05); }
+}
+
+/* Shake effect */
+.floating-effect-shake {
+  transition: background-color 0.3s ease;
+}
+.floating-effect-shake:hover {
+  animation: shakeEffect 0.4s ease;
+}
+@keyframes shakeEffect {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+.floating-item-parallelogram.floating-effect-shake:hover {
+  animation: shakeEffectSkew 0.4s ease;
+}
+@keyframes shakeEffectSkew {
+  0%, 100% { transform: skewX(-12deg) translateX(0); }
+  20% { transform: skewX(-12deg) translateX(-3px); }
+  40% { transform: skewX(-12deg) translateX(3px); }
+  60% { transform: skewX(-12deg) translateX(-2px); }
+  80% { transform: skewX(-12deg) translateX(2px); }
+}
+
+/* Rotate effect */
+.floating-effect-rotate {
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+.floating-effect-rotate:hover {
+  transform: rotate(3deg) scale(1.05);
+}
+.floating-item-parallelogram.floating-effect-rotate:hover {
+  transform: skewX(-12deg) rotate(3deg) scale(1.05);
+}
+
+/* Slide effect */
+.floating-effect-slide {
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  overflow: hidden;
+}
+.floating-effect-slide:hover {
+  transform: translateX(5px);
+}
+.floating-item-parallelogram.floating-effect-slide:hover {
+  transform: skewX(-12deg) translateX(5px);
+}
+
+/* 3D Flip effect */
+.floating-effect-flip {
+  transition: transform 0.4s ease, background-color 0.3s ease;
+  transform-style: preserve-3d;
+}
+.floating-effect-flip:hover {
+  transform: rotateY(10deg) scale(1.05);
+}
+.floating-item-parallelogram.floating-effect-flip:hover {
+  transform: skewX(-12deg) rotateY(10deg) scale(1.05);
+}
+
+/* ═══ Floating Text Effects ═══ */
+
+/* Text underline effect */
+.floating-text-underline span {
+  position: relative;
+}
+.floating-text-underline span::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+.floating-text-underline:hover span::after {
+  width: 100%;
+}
+
+/* Text bold on hover */
+.floating-text-bold:hover span {
+  font-weight: 700 !important;
+}
+
+/* Text uppercase on hover */
+.floating-text-uppercase:hover span {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Text shadow effect */
+.floating-text-shadow:hover span {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Text glow effect */
+.floating-text-glow:hover span {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+}
+
+/* Text spacing effect */
+.floating-text-spacing span {
+  transition: letter-spacing 0.3s ease;
+}
+.floating-text-spacing:hover span {
+  letter-spacing: 0.15em;
+}
+
+/* Active state for floating items */
+.floating-item-active {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* ═══ Boxed Navigation ═══ */
+
+.boxed-nav {
+  position: relative;
+  padding: 8px 20px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+}

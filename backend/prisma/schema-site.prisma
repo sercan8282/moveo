@@ -1,6 +1,11 @@
+// =============================================================================
+// Moveo CMS - Site Instance Schema
+// This schema is for individual site deployments (no multi-site management)
+// =============================================================================
+
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -111,7 +116,7 @@ model MenuItem {
   target    String     @default("_self")
   cssClass  String?
   icon      String?
-  styles    Json?      // Per-item styling: bgColor, textColor, hoverColor, shape, effect
+  styles    Json?
   createdAt DateTime   @default(now())
 
   @@map("menu_items")
@@ -220,59 +225,4 @@ model QuoteRequest {
   updatedAt       DateTime @updatedAt
 
   @@map("quote_requests")
-}
-
-// =============================================================================
-// Multi-Site Docker Orchestration
-// =============================================================================
-
-enum SiteStatus {
-  PENDING
-  DEPLOYING
-  RUNNING
-  STOPPED
-  ERROR
-}
-
-model ManagedSite {
-  id              Int        @id @default(autoincrement())
-  name            String     @unique
-  slug            String     @unique
-  domain          String?
-  description     String?
-  status          SiteStatus @default(PENDING)
-  
-  // Docker configuration - Ports
-  nginxPort       Int        @unique
-  npmHttpPort     Int?
-  npmHttpsPort    Int?
-  npmAdminPort    Int?
-  portainerPort   Int?
-  containerPrefix String     @unique
-  
-  // Database credentials (auto-generated)
-  dbPassword      String
-  jwtSecret       String
-  
-  // Container IDs (set after deployment)
-  nginxContainerId    String?
-  backendContainerId  String?
-  postgresContainerId String?
-  redisContainerId    String?
-  npmContainerId      String?
-  npmDbContainerId    String?
-  portainerContainerId String?
-  
-  // Status info
-  errorMessage    String?
-  lastHealthCheck DateTime?
-  
-  // Admin access
-  adminEmail      String
-  adminPassword   String     // Initial password, should be changed
-  
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-
-  @@map("managed_sites")
 }

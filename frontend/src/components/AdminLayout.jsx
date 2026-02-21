@@ -17,6 +17,7 @@ const navItems = [
   { key: 'users', path: '/admin/users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN'] },
   { key: 'company', path: '/admin/company', icon: '🏢', roles: ['SUPER_ADMIN', 'ADMIN'] },
   { key: 'emailSettings', path: '/admin/email', icon: '📧', roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { key: 'sites', path: '/admin/sites', icon: '🌐', roles: ['SUPER_ADMIN'] },
   { key: 'settings', path: '/admin/settings', icon: '⚙' , roles: ['SUPER_ADMIN', 'ADMIN'] },
 ];
 

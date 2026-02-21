@@ -160,6 +160,146 @@ docker compose down -v
 docker compose up -d
 ```
 
+## Updating (Production)
+
+Use the update script to safely update your production installation:
+
+```bash
+# Linux/Mac
+chmod +x update.sh
+./update.sh
+
+# Windows
+.\update.ps1
+```
+
+### Update Options
+
+| Option | Description |
+|--------|-------------|
+| `--dry-run` / `-DryRun` | Preview what would happen without making changes |
+| `--rollback` / `-Rollback` | Rollback to the previous version |
+| `--force` / `-Force` | Force update even if git has uncommitted changes |
+
+### What the Update Script Does
+
+1. **Creates backup** — Saves current git commit, .env, docker-compose.yml, and database dump
+2. **Checks git status** — Ensures no uncommitted changes
+3. **Pulls latest code** — From the remote repository
+4. **Rebuilds images** — Rebuilds all Docker images without cache
+5. **Updates containers** — Recreates containers while preserving volumes
+6. **Runs migrations** — Automatically applied via backend startup
+7. **Verifies update** — Checks container and health status
+
+### What is Preserved
+
+- All database data (PostgreSQL volumes)
+- Uploaded media files (uploads volume)
+- Environment configuration (.env file)
+- SSL certificates (from NPM)
+- All custom settings in the database
+
+### Rollback
+
+If something goes wrong, rollback to the previous version:
+
+```bash
+# Linux
+./update.sh --rollback
+
+# Windows
+.\update.ps1 -Rollback
+```
+
+Backups are stored in the `backups/` directory. The last 5 backups are kept automatically.
+
+## Multi-Site Management
+
+The Moveo CMS supports managing multiple websites from a single installation. Each site runs in its own isolated Docker stack with:
+
+- Dedicated PostgreSQL database
+- Dedicated Redis cache
+- Dedicated Backend API
+- Dedicated Nginx proxy
+- Shared Nginx Proxy Manager (for SSL/domains)
+- Shared Portainer (for Docker management)
+
+### Creating a New Site
+
+1. Go to Admin Panel → Site Management (Super Admin only)
+2. Click "New Site"
+3. Enter site name and slug (slug becomes the internal prefix, e.g. `demo-backend`)
+4. Click "Deploy"
+5. Wait for all containers to start (~1-2 minutes)
+6. Credentials (admin login, database) will be shown in a modal — save these!
+
+### Accessing Sub-Sites
+
+Each sub-site backend runs on a dynamic port. View the port in:
+- Site Management → site card shows port
+- Portainer → container details
+- `docker ps` command
+
+To access the admin panel of a sub-site:
+```
+http://SERVER_IP:PORT/admin
+```
+
+### Connecting Domains to Sub-Sites
+
+1. Open Nginx Proxy Manager
+2. Add new Proxy Host
+3. Domain: `clientsite.com`
+4. Forward Hostname: `{slug}-nginx` (e.g., `demo-nginx`)
+5. Forward Port: `80`
+6. Enable SSL with Let's Encrypt
+
+### Adding Existing Site to Multi-Site System
+
+If you have an existing Moveo site and want to add it to the multi-site management system:
+
+1. **Export database from existing site:**
+   ```bash
+   docker exec moveo-postgres pg_dump -U moveo moveo_cms > existing-site-backup.sql
+   ```
+
+2. **Export uploaded media:**
+   ```bash
+   docker cp moveo-backend:/app/uploads ./existing-uploads
+   ```
+
+3. **Create new site via Site Manager** (see above)
+
+4. **Import database to new site:**
+   ```bash
+   # Get the new site's postgres container name
+   docker exec -i {slug}-postgres psql -U moveo moveo_cms < existing-site-backup.sql
+   ```
+
+5. **Copy uploads to new site:**
+   ```bash
+   docker cp ./existing-uploads/. {slug}-backend:/app/uploads/
+   ```
+
+6. **Restart the backend:**
+   ```bash
+   docker restart {slug}-backend
+   ```
+
+### Site Stack Architecture
+
+Each sub-site creates these containers:
+
+| Container | Purpose |
+|-----------|---------|
+| `{slug}-postgres` | PostgreSQL 16 database |
+| `{slug}-redis` | Redis 7 cache |
+| `{slug}-backend` | Node.js API server |
+| `{slug}-nginx` | Nginx reverse proxy |
+| `{slug}-npm` | Nginx Proxy Manager |
+| `{slug}-npm-db` | MariaDB for NPM |
+| `{slug}-portainer` | Portainer (optional, can be shared) |
+
 ## User Roles
 
 | Role | Pages | Posts | Media | Users | Settings | Themes |

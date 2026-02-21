@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++ pkgconfig openssl openssl-dev vips-dev --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
+RUN apk add --no-cache python3 make g++ pkgconfig openssl openssl-dev vips-dev ffmpeg --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
 
 ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
 
