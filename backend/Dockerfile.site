@@ -1,0 +1,50 @@
+# =============================================================================
+# Moveo CMS - Site Instance Backend
+# This image is for individual site deployments (no multi-site management)
+# Using Debian slim for better Prisma compatibility (OpenSSL/glibc support)
+# =============================================================================
+
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install build dependencies and OpenSSL (required for Prisma)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install --omit=dev
+
+# Copy the SITE-SPECIFIC schema (without ManagedSite model)
+COPY prisma/schema-site.prisma ./prisma/schema.prisma
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Copy application source
+COPY src ./src/
+
+# Copy seed files
+COPY prisma/seed.js ./prisma/
+COPY prisma/seed-transport.js ./prisma/
+
+# Create uploads directory
+RUN mkdir -p /app/uploads
+
+EXPOSE 4000
+
+# Startup: push schema (creates tables), seed data, run server
+# Using db push instead of migrate deploy - no migration history needed
+CMD sh -c '\
+  echo "🔧 Applying database schema..." && \
+  npx prisma db push --skip-generate --accept-data-loss 2>&1 && \
+  echo "🌱 Seeding database..." && \
+  node prisma/seed.js 2>&1 && \
+  echo "🚀 Starting server..." && \
+  node src/index.js \
+'

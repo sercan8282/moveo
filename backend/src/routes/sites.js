@@ -35,7 +35,7 @@ router.get('/docker-status', async (req, res) => {
 
 // All other routes require SUPER_ADMIN
 router.use(authenticate);
-router.use(authorize(['SUPER_ADMIN']));
+router.use(authorize('SUPER_ADMIN'));
 
 /**
  * GET /api/sites
@@ -114,8 +114,9 @@ router.post('/', async (req, res) => {
     const slug = generateSlug(name);
     const containerPrefix = `site-${slug}`;
     
-    // Find available port
-    const nginxPort = await dockerOrchestrator.findAvailablePort(8100);
+    // Find 5 available ports: nginx, npm-http, npm-https, npm-admin, portainer
+    const [nginxPort, npmHttpPort, npmHttpsPort, npmAdminPort, portainerPort] = 
+      await dockerOrchestrator.findAvailablePorts(5, 8100);
     
     // Generate credentials
     const dbPassword = dockerOrchestrator.generatePassword();
@@ -130,6 +131,10 @@ router.post('/', async (req, res) => {
         description: description || null,
         status: 'PENDING',
         nginxPort,
+        npmHttpPort,
+        npmHttpsPort,
+        npmAdminPort,
+        portainerPort,
         containerPrefix,
         dbPassword,
         jwtSecret,
@@ -191,7 +196,6 @@ router.post('/:id/deploy', async (req, res) => {
           name: site.name,
           slug: site.slug,
           containerPrefix: site.containerPrefix,
-          nginxPort: site.nginxPort,
           dbPassword: site.dbPassword,
           jwtSecret: site.jwtSecret,
           adminEmail: site.adminEmail,
@@ -202,10 +206,20 @@ router.post('/:id/deploy', async (req, res) => {
           where: { id: siteId },
           data: {
             status: 'RUNNING',
+            // Update ports from deployment result
+            nginxPort: result.ports.nginx,
+            npmHttpPort: result.ports.npmHttp,
+            npmHttpsPort: result.ports.npmHttps,
+            npmAdminPort: result.ports.npmAdmin,
+            portainerPort: result.ports.portainer,
+            // Container IDs
             nginxContainerId: result.containers.nginx,
             backendContainerId: result.containers.backend,
             postgresContainerId: result.containers.postgres,
             redisContainerId: result.containers.redis,
+            npmContainerId: result.containers.npm,
+            npmDbContainerId: result.containers.npmDb,
+            portainerContainerId: result.containers.portainer,
             lastHealthCheck: new Date()
           }
         });

@@ -21,6 +21,7 @@ const publicRoutes = require('./routes/public');
 const vehicleTypeRoutes = require('./routes/vehicleTypes');
 const calculatorRoutes = require('./routes/calculator');
 const emailSettingsRoutes = require('./routes/emailSettings');
+const sitesRoutes = require('./routes/sites');
 
 const app = express();
 
@@ -76,6 +77,7 @@ app.use('/api/contact', apiLimiter, contactRoutes);
 app.use('/api/vehicle-types', apiLimiter, vehicleTypeRoutes);
 app.use('/api/calculator', apiLimiter, calculatorRoutes);
 app.use('/api/email-settings', apiLimiter, emailSettingsRoutes);
+app.use('/api/sites', apiLimiter, sitesRoutes);
 app.use('/api/public', publicRoutes);
 
 // Error handling

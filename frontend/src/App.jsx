@@ -25,6 +25,7 @@ import Profile from './admin/Profile';
 import VehicleTypes from './admin/VehicleTypes';
 import QuoteManager from './admin/QuoteManager';
 import EmailSettings from './admin/EmailSettings';
+import SiteManager from './admin/SiteManager';
 
 // Public
 import PublicLayout from './public/PublicLayout';
@@ -100,6 +101,7 @@ export default function App() {
                 <Route path="vehicle-types" element={<VehicleTypes />} />
                 <Route path="quotes" element={<QuoteManager />} />
                 <Route path="email" element={<EmailSettings />} />
+                <Route path="sites" element={<SiteManager />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 

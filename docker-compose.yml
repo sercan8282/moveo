@@ -89,6 +89,7 @@ services:
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-nl}
     volumes:
       - uploads_data:/app/uploads
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for site orchestration
     depends_on:
       postgres:
         condition: service_healthy
@@ -141,6 +142,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # =============================================================================
+  # Site Backend Image Builder (for multi-site deployments)
+  # This service only builds the image, it doesn't run
+  # =============================================================================
+  site-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.site
+    image: moveo-site-backend:latest
+    profiles:
+      - build-only
+    command: ["echo", "Image built successfully"]
 
 volumes:
   postgres_data:
