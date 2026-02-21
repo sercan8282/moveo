@@ -111,6 +111,7 @@ model MenuItem {
   target    String     @default("_self")
   cssClass  String?
   icon      String?
+  styles    Json?      // Per-item styling: bgColor, textColor, hoverColor, shape, effect
   createdAt DateTime   @default(now())
 
   @@map("menu_items")

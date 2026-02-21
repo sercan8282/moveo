@@ -36,6 +36,15 @@ export default function ThemeSettings() {
     navbarFontWeight: '500',
     navbarLetterSpacing: '0.01',
     navbarGap: '32',
+    // Site layout settings
+    siteLayout: 'full',            // full | boxed
+    boxedMaxWidth: '1400',         // px for boxed layout
+    // Menu layout settings
+    menuLayout: 'standard',        // standard | boxed | floating
+    floatingPosition: 'right',     // left | right
+    floatingOffset: '12',          // px from edge
+    menuItemShape: 'none',         // none | square | round | parallelogram
+    menuItemSpacing: '8',          // px between floating items
   });
 
   useEffect(() => { loadThemes(); }, []);
@@ -92,6 +101,13 @@ export default function ThemeSettings() {
       navbarFontWeight: colors.navbarFontWeight || '500',
       navbarLetterSpacing: colors.navbarLetterSpacing || '0.01',
       navbarGap: colors.navbarGap || '32',
+      siteLayout: colors.siteLayout || 'full',
+      boxedMaxWidth: colors.boxedMaxWidth || '1400',
+      menuLayout: colors.menuLayout || 'standard',
+      floatingPosition: colors.floatingPosition || 'right',
+      floatingOffset: colors.floatingOffset || '12',
+      menuItemShape: colors.menuItemShape || 'none',
+      menuItemSpacing: colors.menuItemSpacing || '8',
     });
     setShowForm(true);
   };
@@ -107,6 +123,8 @@ export default function ThemeSettings() {
       navbarStyle: 'solid', navbarHoverEffect: 'slide-up', navbarHoverColor: '#3B82F6',
       navbarHeight: '72', navbarFontSize: '15', navbarFontWeight: '500',
       navbarLetterSpacing: '0.01', navbarGap: '32',
+      siteLayout: 'full', boxedMaxWidth: '1400',
+      menuLayout: 'standard', floatingPosition: 'right', floatingOffset: '12', menuItemShape: 'none', menuItemSpacing: '8',
     });
     setShowForm(true);
   };
@@ -139,6 +157,13 @@ export default function ThemeSettings() {
       navbarFontWeight: form.navbarFontWeight,
       navbarLetterSpacing: form.navbarLetterSpacing,
       navbarGap: form.navbarGap,
+      siteLayout: form.siteLayout,
+      boxedMaxWidth: form.boxedMaxWidth,
+      menuLayout: form.menuLayout,
+      floatingPosition: form.floatingPosition,
+      floatingOffset: form.floatingOffset,
+      menuItemShape: form.menuItemShape,
+      menuItemSpacing: form.menuItemSpacing,
     };
 
     try {
@@ -390,30 +415,182 @@ export default function ThemeSettings() {
                   </div>
                 </div>
 
+                {/* Site Layout Section */}
+                <div className="mb-4 pt-3 border-t border-gray-100">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Site Layout</label>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {[
+                      { value: 'full', label: 'Volledige Breedte', icon: '▬▬▬▬▬', desc: '100% breedte' },
+                      { value: 'boxed', label: 'Boxed', icon: '│▬▬▬│', desc: 'Gecentreerd met max breedte' },
+                    ].map(layout => (
+                      <button
+                        key={layout.value}
+                        type="button"
+                        onClick={() => setForm(prev => ({...prev, siteLayout: layout.value}))}
+                        className={`p-3 rounded-lg text-xs border-2 transition-all duration-200 flex flex-col items-center gap-1 ${
+                          form.siteLayout === layout.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        <span className="text-lg font-mono">{layout.icon}</span>
+                        <span className="font-medium">{layout.label}</span>
+                        <span className="text-[10px] opacity-70">{layout.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {form.siteLayout === 'boxed' && (
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Max Breedte (px)</label>
+                      <input type="range" min="1000" max="1800" value={form.boxedMaxWidth} 
+                        onChange={(e) => setForm(prev => ({...prev, boxedMaxWidth: e.target.value}))}
+                        className="w-full" />
+                      <div className="flex justify-between text-[10px] text-gray-400">
+                        <span>1000px</span>
+                        <span className="font-medium text-gray-600">{form.boxedMaxWidth}px</span>
+                        <span>1800px</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Menu Layout Section */}
+                <div className="mb-4 pt-3 border-t border-gray-100">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Menu Layout</label>
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {[
+                      { value: 'standard', label: 'Standaard', icon: '═══', desc: 'Horizontaal in header' },
+                      { value: 'boxed', label: 'Boxed', icon: '▣═▣', desc: 'Met achtergrond' },
+                      { value: 'floating', label: 'Zwevend', icon: '║', desc: 'Verticaal aan zijkant' },
+                    ].map(layout => (
+                      <button
+                        key={layout.value}
+                        type="button"
+                        onClick={() => setForm(prev => ({...prev, menuLayout: layout.value}))}
+                        className={`p-3 rounded-lg text-xs border-2 transition-all duration-200 flex flex-col items-center gap-1 ${
+                          form.menuLayout === layout.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        <span className="text-lg font-mono">{layout.icon}</span>
+                        <span className="font-medium">{layout.label}</span>
+                        <span className="text-[10px] text-gray-400">{layout.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Floating menu position (only show when floating is selected) */}
+                  {form.menuLayout === 'floating' && (
+                    <div className="grid grid-cols-3 gap-2 mb-3 animate-fade-in">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Positie</label>
+                        <select value={form.floatingPosition} onChange={(e) => setForm(prev => ({...prev, floatingPosition: e.target.value}))}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs">
+                          <option value="left">Links</option>
+                          <option value="right">Rechts</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Afstand Rand (px)</label>
+                        <input type="number" value={form.floatingOffset} onChange={(e) => setForm(prev => ({...prev, floatingOffset: e.target.value}))}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs" min="0" max="200" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Item Spacing (px)</label>
+                        <input type="number" value={form.menuItemSpacing} onChange={(e) => setForm(prev => ({...prev, menuItemSpacing: e.target.value}))}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs" min="4" max="24" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Menu Item Shape */}
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Menu Item Vorm</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { value: 'none', label: 'Geen', preview: 'text' },
+                      { value: 'square', label: 'Vierkant', preview: '▢' },
+                      { value: 'round', label: 'Rond', preview: '○' },
+                      { value: 'parallelogram', label: 'Schuin', preview: '▱' },
+                    ].map(shape => (
+                      <button
+                        key={shape.value}
+                        type="button"
+                        onClick={() => setForm(prev => ({...prev, menuItemShape: shape.value}))}
+                        className={`p-2.5 rounded-lg text-xs border-2 transition-all duration-200 flex flex-col items-center gap-1 ${
+                          form.menuItemShape === shape.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        <span className="text-xl">{shape.preview}</span>
+                        <span>{shape.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Live Preview Strip */}
                 <div className="rounded-lg overflow-hidden border border-gray-200">
                   <div className="text-[10px] text-gray-400 px-2 py-1 bg-gray-50 border-b border-gray-200">Voorbeeld</div>
-                  <div className="flex items-center justify-center gap-6 px-4" style={{
-                    height: `${Math.min(form.navbarHeight, 72)}px`,
-                    backgroundColor: form.headerBg || '#1e40af',
-                  }}>
-                    <span className="text-xs font-bold" style={{ color: form.headerText || '#ffffff' }}>Logo</span>
-                    <div className="flex items-center" style={{ gap: `${Math.min(form.navbarGap, 24)}px` }}>
-                      {['Home', 'Over ons', 'Contact'].map((label, i) => (
-                        <span key={label}
-                          className={`nav-link-hover-${form.navbarHoverEffect} ${i === 0 ? 'nav-active' : ''} py-1 px-1 cursor-default`}
-                          style={{
-                            color: form.headerText || '#ffffff',
-                            fontSize: `${Math.min(form.navbarFontSize, 14)}px`,
-                            fontWeight: form.navbarFontWeight || '500',
-                            '--navbar-hover-color': form.navbarHoverColor || '#3b82f6',
-                          }}
-                        >
-                          {label}
-                        </span>
-                      ))}
+                  
+                  {/* Standard/Boxed navbar preview */}
+                  {form.menuLayout !== 'floating' && (
+                    <div className={`flex items-center justify-center gap-6 px-4 ${form.menuLayout === 'boxed' ? 'py-2' : ''}`} style={{
+                      height: `${Math.min(form.navbarHeight, 72)}px`,
+                      backgroundColor: form.headerBg || '#1e40af',
+                    }}>
+                      <span className="text-xs font-bold" style={{ color: form.headerText || '#ffffff' }}>Logo</span>
+                      <div className={`flex items-center ${form.menuLayout === 'boxed' ? 'bg-white/10 px-3 py-1 rounded-full' : ''}`} style={{ gap: `${Math.min(form.navbarGap, 24)}px` }}>
+                        {['Home', 'Over ons', 'Contact'].map((label, i) => (
+                          <span key={label}
+                            className={`nav-link-hover-${form.navbarHoverEffect} menu-shape-${form.menuItemShape} ${i === 0 ? 'nav-active' : ''} py-1 px-1 cursor-default`}
+                            style={{
+                              color: form.headerText || '#ffffff',
+                              fontSize: `${Math.min(form.navbarFontSize, 14)}px`,
+                              fontWeight: form.navbarFontWeight || '500',
+                              '--navbar-hover-color': form.navbarHoverColor || '#3b82f6',
+                            }}
+                          >
+                            {label}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Floating menu preview */}
+                  {form.menuLayout === 'floating' && (
+                    <div className="relative h-24" style={{ backgroundColor: '#f1f5f9' }}>
+                      <div 
+                        className="absolute top-1/2 -translate-y-1/2 flex flex-col py-2 px-1 rounded-lg shadow-lg"
+                        style={{ 
+                          [form.floatingPosition]: `${Math.min(form.floatingOffset || 12, 40)}px`,
+                          gap: `${form.menuItemSpacing}px`,
+                          backgroundColor: form.headerBg || '#1e40af',
+                          borderRadius: form.floatingPosition === 'left' ? '0 8px 8px 0' : '8px 0 0 8px',
+                        }}
+                      >
+                        {['◂', '○', '●'].map((icon, i) => (
+                          <span key={icon}
+                            className={`menu-shape-${form.menuItemShape} px-2 py-1 text-center cursor-default ${i === 1 ? 'nav-active' : ''}`}
+                            style={{
+                              color: form.headerText || '#ffffff',
+                              fontSize: '10px',
+                              '--navbar-hover-color': form.navbarHoverColor || '#3b82f6',
+                            }}
+                          >
+                            {icon}
+                          </span>
+                        ))}
+                      </div>
+                      <span className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] text-gray-400">
+                        Zwevend menu ({form.floatingPosition === 'left' ? 'links' : 'rechts'}, {form.floatingOffset || 12}px van rand)
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

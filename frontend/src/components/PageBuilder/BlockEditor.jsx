@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import RichTextEditor from '../RichTextEditor';
 import MediaLibrary from '../MediaLibrary';
+import EffectsPanel from './EffectsPanel';
 
 export default function BlockEditor({ block, onChange }) {
   const [showMedia, setShowMedia] = useState(false);
@@ -19,6 +20,8 @@ export default function BlockEditor({ block, onChange }) {
       onChange({ src: url, alt: media.altText || media.originalName || '' });
     } else if (mediaTarget === 'hero-bg') {
       onChange({ backgroundImage: url });
+    } else if (mediaTarget === 'hero-video') {
+      onChange({ backgroundVideo: url });
     } else if (mediaTarget === 'carousel') {
       onChange({ images: [...(block.data.images || []), { src: url, alt: media.altText || '' }] });
     } else if (mediaTarget === 'avatar') {
@@ -346,21 +349,83 @@ export default function BlockEditor({ block, onChange }) {
               <textarea value={block.data.subtitle || ''} onChange={e => onChange({ subtitle: e.target.value })}
                 rows={2} className={inputClass} />
             </div>
+            
+            {/* Background type selector */}
             <div>
-              <label className={labelClass}>Achtergrondafbeelding</label>
-              {block.data.backgroundImage ? (
-                <div className="relative">
-                  <img src={block.data.backgroundImage} alt="" className="w-full h-32 object-cover rounded-lg" />
-                  <button type="button" onClick={() => onChange({ backgroundImage: '' })}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
-                </div>
-              ) : (
-                <button type="button" onClick={() => openMedia('hero-bg')}
-                  className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-blue-400 text-sm">
-                  Selecteer afbeelding
+              <label className={labelClass}>Achtergrond type</label>
+              <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => onChange({ backgroundType: 'image' })}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    block.data.backgroundType !== 'video' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  🖼️ Afbeelding
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => onChange({ backgroundType: 'video' })}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    block.data.backgroundType === 'video' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  🎬 Video
+                </button>
+              </div>
             </div>
+
+            {block.data.backgroundType === 'video' ? (
+              /* Video background */
+              <div className="space-y-3">
+                <div>
+                  <label className={labelClass}>Achtergrondvideo</label>
+                  {block.data.backgroundVideo ? (
+                    <div className="relative">
+                      <video src={block.data.backgroundVideo} className="w-full h-32 object-cover rounded-lg" muted />
+                      <button type="button" onClick={() => onChange({ backgroundVideo: '' })}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => openMedia('hero-video', 'video')}
+                      className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-blue-400 text-sm">
+                      🎬 Selecteer video
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={block.data.videoMuted !== false}
+                      onChange={e => onChange({ videoMuted: e.target.checked })} />
+                    Gedempt
+                  </label>
+                  <label className="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={block.data.videoLoop !== false}
+                      onChange={e => onChange({ videoLoop: e.target.checked })} />
+                    Herhalen
+                  </label>
+                </div>
+                <p className="text-xs text-gray-400">Video speelt automatisch af zonder controls</p>
+              </div>
+            ) : (
+              /* Image background */
+              <div>
+                <label className={labelClass}>Achtergrondafbeelding</label>
+                {block.data.backgroundImage ? (
+                  <div className="relative">
+                    <img src={block.data.backgroundImage} alt="" className="w-full h-32 object-cover rounded-lg" />
+                    <button type="button" onClick={() => onChange({ backgroundImage: '' })}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => openMedia('hero-bg')}
+                    className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-blue-400 text-sm">
+                    Selecteer afbeelding
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>Hoogte</label>
@@ -381,12 +446,19 @@ export default function BlockEditor({ block, onChange }) {
               Donkere overlay
             </label>
             <div>
+              <label className={labelClass}>Overlay sterkte</label>
+              <input type="range" min="0" max="100" value={block.data.overlayOpacity ?? 50}
+                onChange={e => onChange({ overlayOpacity: parseInt(e.target.value) })}
+                className="w-full" />
+              <span className="text-xs text-gray-400">{block.data.overlayOpacity ?? 50}%</span>
+            </div>
+            <div>
               <label className={labelClass}>Knoptekst (optioneel)</label>
               <input type="text" value={block.data.buttonText || ''} onChange={e => onChange({ buttonText: e.target.value })} className={inputClass} />
             </div>
             <div>
               <label className={labelClass}>Knop URL</label>
-              <input type="url" value={block.data.buttonUrl || ''} onChange={e => onChange({ buttonUrl: e.target.value })} className={inputClass} />
+              <input type="text" value={block.data.buttonUrl || ''} onChange={e => onChange({ buttonUrl: e.target.value })} className={inputClass} />
             </div>
           </div>
         );
@@ -403,36 +475,23 @@ export default function BlockEditor({ block, onChange }) {
               </select>
             </div>
             <label className={labelClass}>Kaarten ({block.data.items?.length || 0})</label>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
+            <div className="space-y-3 max-h-96 overflow-y-auto">
               {(block.data.items || []).map((item, i) => (
-                <div key={i} className="p-3 bg-gray-50 rounded-lg space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-medium text-gray-500">Kaart {i + 1}</span>
-                    <button type="button" onClick={() => onChange({ items: block.data.items.filter((_, j) => j !== i) })}
-                      className="text-red-400 hover:text-red-600 text-xs">✕</button>
-                  </div>
-                  {item.image ? (
-                    <img src={item.image} alt="" className="w-full h-20 object-cover rounded" onClick={() => openMedia(`card-${i}`)} />
-                  ) : (
-                    <button type="button" onClick={() => openMedia(`card-${i}`)}
-                      className="w-full py-3 border border-dashed rounded text-xs text-gray-400">+ Afbeelding</button>
-                  )}
-                  <input type="text" value={item.title || ''} placeholder="Titel"
-                    onChange={e => {
-                      const items = [...block.data.items]; items[i] = { ...items[i], title: e.target.value }; onChange({ items });
-                    }} className="w-full px-2 py-1 border rounded text-xs" />
-                  <textarea value={item.description || ''} placeholder="Beschrijving" rows={2}
-                    onChange={e => {
-                      const items = [...block.data.items]; items[i] = { ...items[i], description: e.target.value }; onChange({ items });
-                    }} className="w-full px-2 py-1 border rounded text-xs" />
-                  <input type="text" value={item.link || ''} placeholder="Link URL (bijv. /diensten of https://...)"
-                    onChange={e => {
-                      const items = [...block.data.items]; items[i] = { ...items[i], link: e.target.value }; onChange({ items });
-                    }} className="w-full px-2 py-1 border rounded text-xs" />
-                </div>
+                <CardItemEditor
+                  key={i}
+                  item={item}
+                  index={i}
+                  onUpdate={(updatedItem) => {
+                    const items = [...block.data.items];
+                    items[i] = updatedItem;
+                    onChange({ items });
+                  }}
+                  onDelete={() => onChange({ items: block.data.items.filter((_, j) => j !== i) })}
+                  onSelectImage={() => openMedia(`card-${i}`)}
+                />
               ))}
             </div>
-            <button type="button" onClick={() => onChange({ items: [...(block.data.items || []), { title: '', description: '', image: '', link: '' }] })}
+            <button type="button" onClick={() => onChange({ items: [...(block.data.items || []), { title: '', description: '', image: '', link: '', effects: {} }] })}
               className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 text-sm">+ Kaart toevoegen</button>
           </div>
         );
@@ -603,10 +662,199 @@ export default function BlockEditor({ block, onChange }) {
     }
   };
 
+  const handleEffectsChange = (effects) => {
+    onChange({ effects });
+  };
+
   return (
-    <div>
+    <div className="space-y-4">
       {renderEditor()}
+      
+      {/* Effects Panel - available for all block types */}
+      <EffectsPanel 
+        effects={block.data.effects || {}} 
+        onChange={handleEffectsChange} 
+      />
+      
       <MediaLibrary isOpen={showMedia} onClose={() => { setShowMedia(false); setMediaTarget(null); setMediaFilterType(null); }} onSelect={handleMediaSelect} filterType={mediaFilterType} />
+    </div>
+  );
+}
+
+/* ============================================================================
+   CardItemEditor - Individual card editor with per-card effects
+   ============================================================================ */
+const CARD_EFFECTS = {
+  hover: [
+    { value: '', label: 'Geen hover' },
+    { value: 'effect-hover-zoom', label: 'Zoom' },
+    { value: 'effect-hover-lift', label: 'Optillen' },
+    { value: 'effect-hover-glow', label: 'Gloed (blauw)' },
+    { value: 'effect-hover-glow-success', label: 'Gloed (groen)' },
+    { value: 'effect-hover-glow-warning', label: 'Gloed (oranje)' },
+    { value: 'effect-hover-shine', label: 'Schijnen' },
+    { value: 'effect-hover-pulse', label: 'Pulseren' },
+    { value: 'effect-hover-tilt', label: '3D Kantelen' },
+  ],
+  flip: [
+    { value: '', label: 'Geen flip' },
+    { value: 'horizontal', label: 'Horizontaal draaien' },
+    { value: 'vertical', label: 'Verticaal draaien' },
+  ],
+  animation: [
+    { value: '', label: 'Geen animatie' },
+    { value: 'effect-anim-fade-in-up', label: 'Fade In Up' },
+    { value: 'effect-anim-zoom-in', label: 'Zoom In' },
+    { value: 'effect-anim-bounce', label: 'Bounce' },
+  ],
+};
+
+function CardItemEditor({ item, index, onUpdate, onDelete, onSelectImage }) {
+  const [showEffects, setShowEffects] = useState(false);
+  const effects = item.effects || {};
+  
+  const updateField = (field, value) => {
+    onUpdate({ ...item, [field]: value });
+  };
+  
+  const updateEffect = (key, value) => {
+    onUpdate({ 
+      ...item, 
+      effects: { ...effects, [key]: value }
+    });
+  };
+
+  const updateFlipSetting = (key, value) => {
+    onUpdate({
+      ...item,
+      effects: {
+        ...effects,
+        flipSettings: { ...(effects.flipSettings || {}), [key]: value }
+      }
+    });
+  };
+
+  const inputClass = "w-full px-2 py-1 border border-gray-300 rounded text-xs";
+  const selectClass = "w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white";
+  const hasEffects = effects.hover || effects.flip || effects.animation;
+
+  return (
+    <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <span className="text-xs font-medium text-gray-500">Kaart {index + 1}</span>
+        <button type="button" onClick={onDelete} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+      </div>
+      
+      {/* Image */}
+      {item.image ? (
+        <img src={item.image} alt="" className="w-full h-20 object-cover rounded cursor-pointer" onClick={onSelectImage} />
+      ) : (
+        <button type="button" onClick={onSelectImage}
+          className="w-full py-3 border border-dashed rounded text-xs text-gray-400 hover:border-blue-400">+ Afbeelding</button>
+      )}
+      
+      {/* Basic fields */}
+      <input type="text" value={item.title || ''} placeholder="Titel"
+        onChange={e => updateField('title', e.target.value)} className={inputClass} />
+      <textarea value={item.description || ''} placeholder="Beschrijving" rows={2}
+        onChange={e => updateField('description', e.target.value)} className={inputClass} />
+      <input type="text" value={item.link || ''} placeholder="Link URL"
+        onChange={e => updateField('link', e.target.value)} className={inputClass} />
+      
+      {/* Effects toggle */}
+      <button
+        type="button"
+        onClick={() => setShowEffects(!showEffects)}
+        className={`w-full py-1.5 text-xs rounded flex items-center justify-center gap-1 transition-colors ${
+          hasEffects ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+      >
+        ✨ Effecten {hasEffects && '●'} {showEffects ? '▲' : '▼'}
+      </button>
+      
+      {/* Effects panel */}
+      {showEffects && (
+        <div className="p-2 bg-white rounded border border-gray-200 space-y-2">
+          {/* Hover effect */}
+          <div>
+            <label className="text-xs text-gray-500">Hover effect</label>
+            <select value={effects.hover || ''} onChange={e => updateEffect('hover', e.target.value)} className={selectClass}>
+              {CARD_EFFECTS.hover.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Animation */}
+          <div>
+            <label className="text-xs text-gray-500">Animatie (bij laden)</label>
+            <select value={effects.animation || ''} onChange={e => updateEffect('animation', e.target.value)} className={selectClass}>
+              {CARD_EFFECTS.animation.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Card flip */}
+          <div>
+            <label className="text-xs text-gray-500">Kaart omdraaien</label>
+            <select value={effects.flip || ''} onChange={e => updateEffect('flip', e.target.value)} className={selectClass}>
+              {CARD_EFFECTS.flip.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Flip settings */}
+          {effects.flip && (
+            <div className="p-2 bg-gray-50 rounded space-y-2">
+              <p className="text-xs font-medium text-gray-500">Achterkant kaart</p>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-gray-400">Achtergrond</label>
+                  <input
+                    type="color"
+                    value={effects.flipSettings?.backgroundColor || '#2563eb'}
+                    onChange={e => updateFlipSetting('backgroundColor', e.target.value)}
+                    className="w-full h-7 rounded cursor-pointer"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-gray-400">Tekstkleur</label>
+                  <input
+                    type="color"
+                    value={effects.flipSettings?.textColor || '#ffffff'}
+                    onChange={e => updateFlipSetting('textColor', e.target.value)}
+                    className="w-full h-7 rounded cursor-pointer"
+                  />
+                </div>
+              </div>
+              <input
+                type="text"
+                value={effects.flipSettings?.backTitle || ''}
+                onChange={e => updateFlipSetting('backTitle', e.target.value)}
+                placeholder="Titel achterkant (optioneel)"
+                className={inputClass}
+              />
+              <textarea
+                value={effects.flipSettings?.backContent || ''}
+                onChange={e => updateFlipSetting('backContent', e.target.value)}
+                placeholder="Tekst achterkant"
+                rows={2}
+                className={inputClass}
+              />
+              <input
+                type="text"
+                value={effects.flipSettings?.buttonText || ''}
+                onChange={e => updateFlipSetting('buttonText', e.target.value)}
+                placeholder="Button tekst (optioneel)"
+                className={inputClass}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

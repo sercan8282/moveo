@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import ContactForm from './ContactForm';
 import GoogleMap from './GoogleMap';
+import { buildEffectClasses, buildOverlayStyle } from './PageBuilder/EffectsPanel';
+import '../styles/effects.css';
 
 /* ====================================================================
    BlockRenderer – renders Page Builder rows/columns/blocks on the
@@ -59,6 +61,9 @@ function RowRenderer({ row }) {
 /* ── Block dispatcher ────────────────────────────────────────────── */
 function BlockComponent({ block }) {
   const bs = block.settings || {};
+  const effects = block.data?.effects || {};
+  const effectClasses = buildEffectClasses(effects);
+  
   const wrapStyle = {
     padding: bs.padding || undefined,
     margin: bs.margin || undefined,
@@ -66,8 +71,72 @@ function BlockComponent({ block }) {
     color: bs.textColor || undefined,
   };
 
+  // Check if this block has overlay or card flip effects
+  const hasOverlay = effects.overlay;
+  const hasCardFlip = effects.cardFlip;
+  const overlaySettings = effects.overlaySettings || {};
+  const cardFlipSettings = effects.cardFlipSettings || {};
+
+  // Build overlay style for custom colors
+  const overlayStyle = hasOverlay ? buildOverlayStyle(overlaySettings) : {};
+
+  // For card flip effect, render special structure
+  if (hasCardFlip) {
+    return (
+      <div style={wrapStyle} className={effectClasses}>
+        <div className="effect-card-flip-inner">
+          <div className="effect-card-flip-front">
+            {renderBlock(block)}
+          </div>
+          <div 
+            className="effect-card-flip-back"
+            style={{ 
+              backgroundColor: cardFlipSettings.backgroundColor || '#2563eb',
+              color: cardFlipSettings.textColor || '#ffffff'
+            }}
+          >
+            <div className="p-6 flex flex-col items-center justify-center h-full text-center">
+              {cardFlipSettings.backTitle && (
+                <h3 className="text-xl font-bold mb-3">{cardFlipSettings.backTitle}</h3>
+              )}
+              {cardFlipSettings.backContent && (
+                <p className="text-sm opacity-90 mb-4">{cardFlipSettings.backContent}</p>
+              )}
+              {cardFlipSettings.buttonText && cardFlipSettings.buttonLink && (
+                <Link 
+                  to={cardFlipSettings.buttonLink} 
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-medium transition-colors"
+                >
+                  {cardFlipSettings.buttonText}
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // For overlay effect, render with hover overlay
+  if (hasOverlay) {
+    return (
+      <div style={wrapStyle} className={`relative ${effectClasses}`}>
+        {renderBlock(block)}
+        <div className="effect-hover-overlay-content" style={overlayStyle}>
+          {overlaySettings.title && (
+            <h3 className="text-xl font-bold mb-2">{overlaySettings.title}</h3>
+          )}
+          {overlaySettings.description && (
+            <p className="text-sm opacity-90">{overlaySettings.description}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Default rendering with effect classes
   return (
-    <div style={wrapStyle}>
+    <div style={wrapStyle} className={effectClasses || undefined}>
       {renderBlock(block)}
     </div>
   );
@@ -191,19 +260,40 @@ function HeroBlock({ data }) {
   const align = data.alignment || 'center';
   const textAlign = { left: 'text-left', center: 'text-center', right: 'text-right' }[align] || 'text-center';
   const justify = { left: 'items-start', center: 'items-center', right: 'items-end' }[align] || 'items-center';
+  const hasVideo = data.backgroundType === 'video' && data.backgroundVideo;
+  const hasImage = data.backgroundImage;
+  const overlayOpacity = (data.overlayOpacity ?? 50) / 100;
 
   return (
     <div
       className={`relative flex flex-col ${justify} justify-center bg-cover bg-center rounded-xl overflow-hidden`}
       style={{
-        backgroundImage: data.backgroundImage ? `url(${data.backgroundImage})` : undefined,
-        backgroundColor: data.backgroundImage ? undefined : 'var(--color-primary, #2563eb)',
+        backgroundImage: !hasVideo && hasImage ? `url(${data.backgroundImage})` : undefined,
+        backgroundColor: !hasVideo && !hasImage ? 'var(--color-primary, #2563eb)' : undefined,
         minHeight: data.height || '400px',
       }}
     >
-      {data.overlay !== false && data.backgroundImage && (
-        <div className="absolute inset-0 bg-black/50" />
+      {/* Video background */}
+      {hasVideo && (
+        <video
+          src={data.backgroundVideo}
+          autoPlay
+          muted={data.videoMuted !== false}
+          loop={data.videoLoop !== false}
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
       )}
+      
+      {/* Overlay */}
+      {data.overlay !== false && (hasVideo || hasImage) && (
+        <div 
+          className="absolute inset-0" 
+          style={{ backgroundColor: `rgba(0, 0, 0, ${overlayOpacity})` }}
+        />
+      )}
+      
+      {/* Content */}
       <div className={`relative z-10 max-w-3xl px-8 py-12 ${textAlign}`}>
         {data.title && (
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">{data.title}</h1>
@@ -364,20 +454,98 @@ function CardsBlock({ data }) {
                     cols === 2 ? 'grid-cols-1 md:grid-cols-2' :
                     'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
 
+  // Block-level effects (fallback if no per-card effects)
+  const blockEffects = data.effects || {};
+
   return (
     <div className={`grid ${gridClass} gap-6`}>
       {(data.items || []).map((item, i) => (
-        <CardItem key={i} item={item} />
+        <CardItem 
+          key={i} 
+          item={item}
+          index={i}
+          blockEffects={blockEffects}
+        />
       ))}
     </div>
   );
 }
 
-function CardItem({ item }) {
+function CardItem({ item, index, blockEffects = {} }) {
+  const cardStyle = { borderColor: 'var(--color-border, #e2e8f0)', backgroundColor: 'var(--color-bg, #fff)' };
+  
+  // Per-card effects take priority over block-level effects
+  const itemEffects = item.effects || {};
+  const hasFlip = itemEffects.flip || blockEffects.cardFlip;
+  const flipSettings = itemEffects.flipSettings || blockEffects.cardFlipSettings || {};
+  const hoverClass = itemEffects.hover || (blockEffects.hover ? buildEffectClasses({ hover: blockEffects.hover }) : '');
+  const animationClass = itemEffects.animation || '';
+  
+  // Combine animation delay based on index for staggered effect
+  const delayClass = animationClass ? `effect-delay-${(index % 5) * 100 + 100}` : '';
+  
+  // Card with flip effect (per-card or block-level)
+  if (hasFlip) {
+    const isVertical = itemEffects.flip === 'vertical' || (blockEffects.cardFlip && blockEffects.cardFlip.includes('vertical'));
+    const flipClass = isVertical ? 'effect-card-flip effect-card-flip-vertical' : 'effect-card-flip';
+    
+    return (
+      <div className={`${flipClass} ${animationClass} ${delayClass}`} style={{ minHeight: '320px' }}>
+        <div className="effect-card-flip-inner">
+          {/* Front of card */}
+          <div 
+            className="effect-card-flip-front rounded-xl overflow-hidden shadow-md border"
+            style={cardStyle}
+          >
+            {item.image && (
+              <img src={item.image} alt={item.title || ''} className="w-full h-48 object-cover" />
+            )}
+            <div className="p-6">
+              {item.title && <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text, #0f172a)' }}>{item.title}</h3>}
+              {item.description && <p style={{ color: 'var(--color-text-light, #64748b)' }}>{item.description}</p>}
+            </div>
+          </div>
+          {/* Back of card */}
+          <div 
+            className="effect-card-flip-back rounded-xl overflow-hidden shadow-md"
+            style={{ 
+              backgroundColor: flipSettings.backgroundColor || '#2563eb',
+              color: flipSettings.textColor || '#ffffff'
+            }}
+          >
+            <div className="p-6 flex flex-col items-center justify-center h-full text-center">
+              {flipSettings.backTitle ? (
+                <h3 className="text-xl font-bold mb-3">{flipSettings.backTitle}</h3>
+              ) : item.title && (
+                <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+              )}
+              {flipSettings.backContent ? (
+                <p className="text-sm opacity-90 mb-4">{flipSettings.backContent}</p>
+              ) : item.description && (
+                <p className="text-sm opacity-90 mb-4">{item.description}</p>
+              )}
+              {item.link && (
+                <Link 
+                  to={item.link} 
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-medium transition-colors"
+                >
+                  {flipSettings.buttonText || 'Bekijk meer'}
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular card with per-card effects
+  const effectClasses = [hoverClass, animationClass, delayClass].filter(Boolean).join(' ');
+  
   const inner = (
     <div
-      className="rounded-xl overflow-hidden shadow-md border transition-transform hover:-translate-y-1"
-      style={{ borderColor: 'var(--color-border, #e2e8f0)', backgroundColor: 'var(--color-bg, #fff)' }}
+      className={`rounded-xl overflow-hidden shadow-md border transition-all ${effectClasses || 'hover:-translate-y-1'}`}
+      style={cardStyle}
     >
       {item.image && (
         <img src={item.image} alt={item.title || ''} className="w-full h-48 object-cover" />

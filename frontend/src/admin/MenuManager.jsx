@@ -39,7 +39,10 @@ export default function MenuManager() {
   const [editingItem, setEditingItem] = useState(null);
 
   const [menuForm, setMenuForm] = useState({ name: '', location: '' });
-  const [itemForm, setItemForm] = useState({ label: '', url: '', pageId: '', parentId: '', target: '_self' });
+  const [itemForm, setItemForm] = useState({ 
+    label: '', url: '', pageId: '', parentId: '', target: '_self',
+    styles: { bgColor: '#3b82f6', textColor: '#ffffff', hoverColor: '#2563eb', shape: 'square', effect: 'none' }
+  });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -105,7 +108,10 @@ export default function MenuManager() {
   const saveItem = async () => {
     try {
       const data = {
-        ...itemForm,
+        label: itemForm.label,
+        url: itemForm.url,
+        target: itemForm.target,
+        styles: itemForm.styles,
         menuId: selectedMenu.id,
         pageId: itemForm.pageId ? parseInt(itemForm.pageId) : null,
         parentId: itemForm.parentId ? parseInt(itemForm.parentId) : null,
@@ -120,7 +126,7 @@ export default function MenuManager() {
       toast.success(t('savedSuccess'));
       setShowItemForm(false);
       setEditingItem(null);
-      setItemForm({ label: '', url: '', pageId: '', parentId: '', target: '_self' });
+      setItemForm({ label: '', url: '', pageId: '', parentId: '', target: '_self', styles: { bgColor: '#3b82f6', textColor: '#ffffff', hoverColor: '#2563eb', shape: 'square', effect: 'none' } });
       loadMenuItems(selectedMenu.id);
     } catch (error) {
       toast.error(error.response?.data?.error || t('error'));
@@ -140,12 +146,20 @@ export default function MenuManager() {
 
   const handleEditItem = (item) => {
     setEditingItem(item);
+    const itemStyles = typeof item.styles === 'string' ? JSON.parse(item.styles) : (item.styles || {});
     setItemForm({
       label: item.label || '',
       url: item.url || '',
       pageId: item.pageId?.toString() || '',
       parentId: item.parentId?.toString() || '',
-      target: item.target || '_self'
+      target: item.target || '_self',
+      styles: {
+        bgColor: itemStyles.bgColor || '#3b82f6',
+        textColor: itemStyles.textColor || '#ffffff',
+        hoverColor: itemStyles.hoverColor || '#2563eb',
+        shape: itemStyles.shape || 'square',
+        effect: itemStyles.effect || 'none'
+      }
     });
     setShowItemForm(true);
   };
@@ -212,7 +226,7 @@ export default function MenuManager() {
                     className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">{t('edit')}</button>
                   <button onClick={() => deleteMenu(selectedMenu.id)}
                     className="px-3 py-1.5 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50">{t('delete')}</button>
-                  <button onClick={() => { setEditingItem(null); setItemForm({ label: '', url: '', pageId: '', parentId: '', target: '_self' }); setShowItemForm(true); }}
+                  <button onClick={() => { setEditingItem(null); setItemForm({ label: '', url: '', pageId: '', parentId: '', target: '_self', styles: { bgColor: '#3b82f6', textColor: '#ffffff', hoverColor: '#2563eb', shape: 'square', effect: 'none' } }); setShowItemForm(true); }}
                     className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     + {t('addItem')}
                   </button>
@@ -276,8 +290,8 @@ export default function MenuManager() {
 
       {/* Item Form Modal */}
       {showItemForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold mb-4">{editingItem ? t('editItem') : t('addItem')}</h3>
             <div className="space-y-3">
               <div>
@@ -306,6 +320,165 @@ export default function MenuManager() {
                   <option value="_self">Same window</option>
                   <option value="_blank">New window</option>
                 </select>
+              </div>
+
+              {/* Per-Item Styling Section */}
+              <div className="pt-3 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <span className="w-5 h-5 bg-purple-100 text-purple-600 rounded flex items-center justify-center text-xs">🎨</span>
+                  Item Styling (voor zwevend menu)
+                </h4>
+                
+                {/* Colors */}
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Achtergrond</label>
+                    <div className="flex items-center gap-1">
+                      <input type="color" value={itemForm.styles?.bgColor || '#3b82f6'} 
+                        onChange={(e) => setItemForm(prev => ({...prev, styles: {...prev.styles, bgColor: e.target.value}}))}
+                        className="w-7 h-7 rounded cursor-pointer border border-gray-200" />
+                      <input type="text" value={itemForm.styles?.bgColor || '#3b82f6'} 
+                        onChange={(e) => setItemForm(prev => ({...prev, styles: {...prev.styles, bgColor: e.target.value}}))}
+                        className="flex-1 px-1.5 py-1 border border-gray-300 rounded text-xs font-mono w-16" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Tekst</label>
+                    <div className="flex items-center gap-1">
+                      <input type="color" value={itemForm.styles?.textColor || '#ffffff'} 
+                        onChange={(e) => setItemForm(prev => ({...prev, styles: {...prev.styles, textColor: e.target.value}}))}
+                        className="w-7 h-7 rounded cursor-pointer border border-gray-200" />
+                      <input type="text" value={itemForm.styles?.textColor || '#ffffff'} 
+                        onChange={(e) => setItemForm(prev => ({...prev, styles: {...prev.styles, textColor: e.target.value}}))}
+                        className="flex-1 px-1.5 py-1 border border-gray-300 rounded text-xs font-mono w-16" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Hover</label>
+                    <div className="flex items-center gap-1">
+                      <input type="color" value={itemForm.styles?.hoverColor || '#2563eb'} 
+                        onChange={(e) => setItemForm(prev => ({...prev, styles: {...prev.styles, hoverColor: e.target.value}}))}
+                        className="w-7 h-7 rounded cursor-pointer border border-gray-200" />
+                      <input type="text" value={itemForm.styles?.hoverColor || '#2563eb'} 
+                        onChange={(e) => setItemForm(prev => ({...prev, styles: {...prev.styles, hoverColor: e.target.value}}))}
+                        className="flex-1 px-1.5 py-1 border border-gray-300 rounded text-xs font-mono w-16" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shape */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Vorm</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { value: 'none', label: 'Geen', icon: 'ab' },
+                      { value: 'square', label: 'Vierkant', icon: '▢' },
+                      { value: 'round', label: 'Rond', icon: '○' },
+                      { value: 'parallelogram', label: 'Schuin', icon: '▱' },
+                    ].map(shape => (
+                      <button
+                        key={shape.value}
+                        type="button"
+                        onClick={() => setItemForm(prev => ({...prev, styles: {...prev.styles, shape: shape.value}}))}
+                        className={`p-2 rounded-lg text-xs border-2 transition-all flex flex-col items-center gap-0.5 ${
+                          itemForm.styles?.shape === shape.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        <span className="text-lg">{shape.icon}</span>
+                        <span className="text-[10px]">{shape.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Hover Effect */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Hover Effect</label>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[
+                      { value: 'none', label: 'Geen' },
+                      { value: 'scale', label: 'Scale' },
+                      { value: 'glow', label: 'Glow' },
+                      { value: 'lift', label: 'Lift' },
+                      { value: 'bounce', label: 'Bounce' },
+                      { value: 'pulse', label: 'Pulse' },
+                      { value: 'shake', label: 'Shake' },
+                      { value: 'rotate', label: 'Rotate' },
+                      { value: 'slide', label: 'Slide' },
+                      { value: 'flip', label: 'Flip' },
+                    ].map(effect => (
+                      <button
+                        key={effect.value}
+                        type="button"
+                        onClick={() => setItemForm(prev => ({...prev, styles: {...prev.styles, effect: effect.value}}))}
+                        className={`px-1.5 py-1 rounded text-[10px] border-2 transition-all ${
+                          itemForm.styles?.effect === effect.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        {effect.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Text Effect */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Tekst Effect</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { value: 'none', label: 'Geen' },
+                      { value: 'underline', label: 'Underline' },
+                      { value: 'bold', label: 'Bold' },
+                      { value: 'uppercase', label: 'UPPER' },
+                      { value: 'shadow', label: 'Shadow' },
+                      { value: 'glow', label: 'Glow' },
+                      { value: 'spacing', label: 'Spacing' },
+                    ].map(effect => (
+                      <button
+                        key={effect.value}
+                        type="button"
+                        onClick={() => setItemForm(prev => ({...prev, styles: {...prev.styles, textEffect: effect.value}}))}
+                        className={`px-1.5 py-1 rounded text-[10px] border-2 transition-all ${
+                          itemForm.styles?.textEffect === effect.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        {effect.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview */}
+                <div className="bg-gray-100 p-4 rounded-lg">
+                  <span className="text-[10px] text-gray-400 block mb-2">Voorbeeld</span>
+                  <div className="flex justify-center">
+                    <span 
+                      className={`inline-block px-4 py-2 text-sm font-medium transition-all duration-300 cursor-pointer
+                        ${itemForm.styles?.shape === 'square' ? 'rounded-none' : ''}
+                        ${itemForm.styles?.shape === 'round' ? 'rounded-full' : ''}
+                        ${itemForm.styles?.shape === 'parallelogram' ? 'skew-x-[-12deg]' : ''}
+                        ${itemForm.styles?.effect === 'scale' ? 'hover:scale-110' : ''}
+                        ${itemForm.styles?.effect === 'lift' ? 'hover:-translate-y-1 hover:shadow-lg' : ''}
+                      `}
+                      style={{
+                        backgroundColor: itemForm.styles?.bgColor || '#3b82f6',
+                        color: itemForm.styles?.textColor || '#ffffff',
+                        borderRadius: itemForm.styles?.shape === 'none' ? '0' : (itemForm.styles?.shape === 'round' ? '9999px' : '8px'),
+                        boxShadow: itemForm.styles?.effect === 'glow' ? `0 0 20px ${itemForm.styles?.bgColor || '#3b82f6'}80` : 'none',
+                      }}
+                    >
+                      <span className={itemForm.styles?.shape === 'parallelogram' ? 'skew-x-[12deg] inline-block' : ''}>
+                        {itemForm.label || 'Menu Item'}
+                      </span>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-4">

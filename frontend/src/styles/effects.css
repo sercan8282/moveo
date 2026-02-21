@@ -1,0 +1,811 @@
+/* ============================================================================
+   MOVEO CMS - Advanced Effects System
+   Hover, Text, Shadow, Animation, Filter & Interactive Effects
+   ============================================================================ */
+
+/* ============================================================================
+   1. HOVER EFFECTS
+   ============================================================================ */
+
+/* Zoom Effects */
+.effect-hover-zoom {
+  transition: transform 0.3s ease;
+}
+.effect-hover-zoom:hover {
+  transform: scale(1.05);
+}
+
+.effect-hover-zoom-lg {
+  transition: transform 0.3s ease;
+}
+.effect-hover-zoom-lg:hover {
+  transform: scale(1.15);
+}
+
+.effect-hover-zoom-out {
+  transition: transform 0.3s ease;
+}
+.effect-hover-zoom-out:hover {
+  transform: scale(0.95);
+}
+
+/* Lift Effect */
+.effect-hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.effect-hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.effect-hover-lift-sm {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.effect-hover-lift-sm:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* Rotate Effects */
+.effect-hover-rotate {
+  transition: transform 0.3s ease;
+}
+.effect-hover-rotate:hover {
+  transform: rotate(3deg);
+}
+
+.effect-hover-rotate-reverse {
+  transition: transform 0.3s ease;
+}
+.effect-hover-rotate-reverse:hover {
+  transform: rotate(-3deg);
+}
+
+/* Tilt Effect */
+.effect-hover-tilt {
+  transition: transform 0.3s ease;
+  transform-style: preserve-3d;
+}
+.effect-hover-tilt:hover {
+  transform: perspective(1000px) rotateX(5deg) rotateY(5deg);
+}
+
+/* Glow Effects */
+.effect-hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+.effect-hover-glow:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+}
+
+.effect-hover-glow-success {
+  transition: box-shadow 0.3s ease;
+}
+.effect-hover-glow-success:hover {
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
+}
+
+.effect-hover-glow-warning {
+  transition: box-shadow 0.3s ease;
+}
+.effect-hover-glow-warning:hover {
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+}
+
+.effect-hover-glow-danger {
+  transition: box-shadow 0.3s ease;
+}
+.effect-hover-glow-danger:hover {
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+}
+
+/* Shine Effect */
+.effect-hover-shine {
+  position: relative;
+  overflow: hidden;
+}
+.effect-hover-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+.effect-hover-shine:hover::before {
+  left: 100%;
+}
+
+/* Pulse on Hover */
+.effect-hover-pulse {
+  transition: transform 0.3s ease;
+}
+.effect-hover-pulse:hover {
+  animation: pulse-effect 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse-effect {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+/* Shake on Hover */
+.effect-hover-shake:hover {
+  animation: shake-effect 0.5s ease-in-out;
+}
+
+@keyframes shake-effect {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+/* Bounce on Hover */
+.effect-hover-bounce:hover {
+  animation: bounce-effect 0.5s ease;
+}
+
+@keyframes bounce-effect {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ============================================================================
+   2. HOVER OVERLAY EFFECT (with text)
+   ============================================================================ */
+
+.effect-hover-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.effect-hover-overlay .overlay-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+  padding: 1rem;
+  text-align: center;
+}
+
+.effect-hover-overlay:hover .overlay-content {
+  opacity: 1;
+}
+
+.effect-hover-overlay .overlay-content h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.effect-hover-overlay .overlay-content p {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+/* Overlay slide variations */
+.effect-hover-overlay-slide-up .overlay-content {
+  transform: translateY(100%);
+  opacity: 1;
+}
+.effect-hover-overlay-slide-up:hover .overlay-content {
+  transform: translateY(0);
+}
+
+.effect-hover-overlay-slide-down .overlay-content {
+  transform: translateY(-100%);
+  opacity: 1;
+}
+.effect-hover-overlay-slide-down:hover .overlay-content {
+  transform: translateY(0);
+}
+
+.effect-hover-overlay-slide-left .overlay-content {
+  transform: translateX(100%);
+  opacity: 1;
+}
+.effect-hover-overlay-slide-left:hover .overlay-content {
+  transform: translateX(0);
+}
+
+.effect-hover-overlay-slide-right .overlay-content {
+  transform: translateX(-100%);
+  opacity: 1;
+}
+.effect-hover-overlay-slide-right:hover .overlay-content {
+  transform: translateX(0);
+}
+
+/* Overlay zoom */
+.effect-hover-overlay-zoom .overlay-content {
+  transform: scale(0.5);
+}
+.effect-hover-overlay-zoom:hover .overlay-content {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* ============================================================================
+   3. CARD FLIP EFFECT
+   ============================================================================ */
+
+.effect-card-flip {
+  perspective: 1000px;
+}
+
+.effect-card-flip .card-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 250px;
+  transition: transform 0.6s ease;
+  transform-style: preserve-3d;
+}
+
+.effect-card-flip:hover .card-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.effect-card-flip .card-flip-front,
+.effect-card-flip .card-flip-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.effect-card-flip .card-flip-front {
+  z-index: 2;
+}
+
+.effect-card-flip .card-flip-back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+/* Vertical flip */
+.effect-card-flip-vertical:hover .card-flip-inner {
+  transform: rotateX(180deg);
+}
+
+.effect-card-flip-vertical .card-flip-back {
+  transform: rotateX(180deg);
+}
+
+/* ============================================================================
+   4. TEXT EFFECTS
+   ============================================================================ */
+
+/* Gradient Text */
+.effect-text-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.effect-text-gradient-rainbow {
+  background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.effect-text-gradient-gold {
+  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.effect-text-gradient-ocean {
+  background: linear-gradient(135deg, #667eea 0%, #00d4ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.effect-text-gradient-fire {
+  background: linear-gradient(135deg, #f12711 0%, #f5af19 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Text Shadow */
+.effect-text-shadow {
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.effect-text-shadow-lg {
+  text-shadow: 4px 4px 8px rgba(0,0,0,0.4);
+}
+
+.effect-text-shadow-glow {
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.effect-text-shadow-glow-white {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.effect-text-shadow-neon {
+  text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #0ff, 0 0 30px #0ff, 0 0 40px #0ff;
+}
+
+.effect-text-shadow-retro {
+  text-shadow: 3px 3px 0px #ff0000, 6px 6px 0px #0000ff;
+}
+
+/* Text Outline */
+.effect-text-outline {
+  -webkit-text-stroke: 1px currentColor;
+  -webkit-text-fill-color: transparent;
+}
+
+.effect-text-outline-thick {
+  -webkit-text-stroke: 2px currentColor;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Animated Text */
+.effect-text-typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriter 3s steps(40) 1s forwards;
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.effect-text-wave {
+  display: inline-block;
+  animation: wave-text 2s ease-in-out infinite;
+}
+
+@keyframes wave-text {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* ============================================================================
+   5. SHADOW EFFECTS
+   ============================================================================ */
+
+.effect-shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.effect-shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.effect-shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.effect-shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.effect-shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.effect-shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.effect-shadow-inner {
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Colored Shadows */
+.effect-shadow-blue {
+  box-shadow: 0 10px 40px -10px rgba(59, 130, 246, 0.5);
+}
+
+.effect-shadow-green {
+  box-shadow: 0 10px 40px -10px rgba(34, 197, 94, 0.5);
+}
+
+.effect-shadow-red {
+  box-shadow: 0 10px 40px -10px rgba(239, 68, 68, 0.5);
+}
+
+.effect-shadow-purple {
+  box-shadow: 0 10px 40px -10px rgba(168, 85, 247, 0.5);
+}
+
+.effect-shadow-orange {
+  box-shadow: 0 10px 40px -10px rgba(249, 115, 22, 0.5);
+}
+
+/* Neumorphism */
+.effect-shadow-neumorphism {
+  background: #e0e0e0;
+  box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
+}
+
+.effect-shadow-neumorphism-inset {
+  background: #e0e0e0;
+  box-shadow: inset 20px 20px 60px #bebebe, inset -20px -20px 60px #ffffff;
+}
+
+/* ============================================================================
+   6. ANIMATION EFFECTS (on load / scroll)
+   ============================================================================ */
+
+/* Fade Animations */
+.effect-anim-fade-in {
+  animation: fadeIn 0.6s ease forwards;
+}
+
+.effect-anim-fade-in-up {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.effect-anim-fade-in-down {
+  animation: fadeInDown 0.6s ease forwards;
+}
+
+.effect-anim-fade-in-left {
+  animation: fadeInLeft 0.6s ease forwards;
+}
+
+.effect-anim-fade-in-right {
+  animation: fadeInRight 0.6s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Zoom Animations */
+.effect-anim-zoom-in {
+  animation: zoomIn 0.6s ease forwards;
+}
+
+.effect-anim-zoom-out {
+  animation: zoomOut 0.6s ease forwards;
+}
+
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes zoomOut {
+  from { opacity: 0; transform: scale(1.2); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Bounce */
+.effect-anim-bounce {
+  animation: bounceIn 0.8s ease forwards;
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Flip */
+.effect-anim-flip {
+  animation: flipIn 0.6s ease forwards;
+}
+
+@keyframes flipIn {
+  from { opacity: 0; transform: perspective(400px) rotateY(90deg); }
+  to { opacity: 1; transform: perspective(400px) rotateY(0); }
+}
+
+/* Rotate */
+.effect-anim-rotate {
+  animation: rotateIn 0.6s ease forwards;
+}
+
+@keyframes rotateIn {
+  from { opacity: 0; transform: rotate(-180deg); }
+  to { opacity: 1; transform: rotate(0); }
+}
+
+/* Slide */
+.effect-anim-slide-up {
+  animation: slideUp 0.6s ease forwards;
+}
+
+.effect-anim-slide-down {
+  animation: slideDown 0.6s ease forwards;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Continuous Animations */
+.effect-anim-pulse {
+  animation: pulseAnim 2s ease-in-out infinite;
+}
+
+@keyframes pulseAnim {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.effect-anim-float {
+  animation: floatAnim 3s ease-in-out infinite;
+}
+
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.effect-anim-swing {
+  animation: swingAnim 1s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+@keyframes swingAnim {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(5deg); }
+  75% { transform: rotate(-5deg); }
+}
+
+.effect-anim-heartbeat {
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.1); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+}
+
+/* Spin */
+.effect-anim-spin {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   7. FILTER EFFECTS
+   ============================================================================ */
+
+.effect-filter-grayscale {
+  filter: grayscale(100%);
+  transition: filter 0.3s ease;
+}
+
+.effect-filter-grayscale:hover {
+  filter: grayscale(0%);
+}
+
+.effect-filter-sepia {
+  filter: sepia(100%);
+}
+
+.effect-filter-blur {
+  filter: blur(2px);
+  transition: filter 0.3s ease;
+}
+
+.effect-filter-blur:hover {
+  filter: blur(0);
+}
+
+.effect-filter-brightness {
+  filter: brightness(0.8);
+  transition: filter 0.3s ease;
+}
+
+.effect-filter-brightness:hover {
+  filter: brightness(1);
+}
+
+.effect-filter-contrast {
+  filter: contrast(1.2);
+}
+
+.effect-filter-saturate {
+  filter: saturate(1.5);
+}
+
+.effect-filter-hue-rotate {
+  transition: filter 0.3s ease;
+}
+
+.effect-filter-hue-rotate:hover {
+  filter: hue-rotate(90deg);
+}
+
+/* ============================================================================
+   8. BORDER EFFECTS
+   ============================================================================ */
+
+.effect-border-glow {
+  border: 2px solid transparent;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.effect-border-glow:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.effect-border-gradient {
+  border: 3px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #667eea 0%, #764ba2 100%) border-box;
+  border-radius: 0.75rem;
+}
+
+.effect-border-animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.effect-border-animated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid transparent;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #667eea, #764ba2, #667eea) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  animation: borderRotate 3s linear infinite;
+}
+
+@keyframes borderRotate {
+  from { background-position: 0 0; }
+  to { background-position: 200% 0; }
+}
+
+/* ============================================================================
+   9. GLASSMORPHISM EFFECT
+   ============================================================================ */
+
+.effect-glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.effect-glass-dark {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================================
+   10. SCROLL REVEAL (requires JS intersection observer)
+   ============================================================================ */
+
+.effect-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.effect-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.effect-reveal-left {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.effect-reveal-left.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.effect-reveal-right {
+  opacity: 0;
+  transform: translateX(50px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.effect-reveal-right.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.effect-reveal-scale {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.effect-reveal-scale.revealed {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ============================================================================
+   11. ANIMATION DELAYS
+   ============================================================================ */
+
+.effect-delay-100 { animation-delay: 0.1s; }
+.effect-delay-200 { animation-delay: 0.2s; }
+.effect-delay-300 { animation-delay: 0.3s; }
+.effect-delay-400 { animation-delay: 0.4s; }
+.effect-delay-500 { animation-delay: 0.5s; }
+.effect-delay-600 { animation-delay: 0.6s; }
+.effect-delay-700 { animation-delay: 0.7s; }
+.effect-delay-800 { animation-delay: 0.8s; }
+.effect-delay-900 { animation-delay: 0.9s; }
+.effect-delay-1000 { animation-delay: 1s; }
+
+/* ============================================================================
+   12. ANIMATION DURATIONS
+   ============================================================================ */
+
+.effect-duration-fast { animation-duration: 0.3s !important; transition-duration: 0.3s !important; }
+.effect-duration-normal { animation-duration: 0.6s !important; transition-duration: 0.6s !important; }
+.effect-duration-slow { animation-duration: 1s !important; transition-duration: 1s !important; }
+.effect-duration-slower { animation-duration: 1.5s !important; transition-duration: 1.5s !important; }
