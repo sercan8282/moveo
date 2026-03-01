@@ -8,6 +8,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:seed": "node prisma/seed.js",
+    "prisma:seed-templates": "node prisma/seed-templates.js",
     "setup": "npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed"
   },
   "dependencies": {

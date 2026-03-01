@@ -26,6 +26,8 @@ import VehicleTypes from './admin/VehicleTypes';
 import QuoteManager from './admin/QuoteManager';
 import EmailSettings from './admin/EmailSettings';
 import SiteManager from './admin/SiteManager';
+import TemplateManager from './admin/TemplateManager';
+import NavigationSettings from './admin/NavigationSettings';
 
 // Public
 import PublicLayout from './public/PublicLayout';
@@ -66,6 +68,21 @@ function AdminRedirect() {
   return user ? <Navigate to="/admin" replace /> : <Login />;
 }
 
+function FeatureGuard({ feature, children }) {
+  const { features } = useAuth();
+  if (!features[feature]) {
+    return (
+      <div className="p-8 text-center">
+        <div className="bg-red-50 rounded-lg p-6 max-w-md mx-auto">
+          <h2 className="text-xl font-bold text-red-700 mb-2">Geen toegang</h2>
+          <p className="text-red-600">Deze functie is niet beschikbaar op deze site.</p>
+        </div>
+      </div>
+    );
+  }
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -94,6 +111,7 @@ export default function App() {
                 <Route path="menus" element={<MenuManager />} />
                 <Route path="users" element={<UserManager />} />
                 <Route path="themes" element={<ThemeSettings />} />
+                <Route path="navigation" element={<NavigationSettings />} />
                 <Route path="homepage" element={<HomepageEditor />} />
                 <Route path="footer" element={<FooterEditor />} />
                 <Route path="settings" element={<Settings />} />
@@ -101,7 +119,8 @@ export default function App() {
                 <Route path="vehicle-types" element={<VehicleTypes />} />
                 <Route path="quotes" element={<QuoteManager />} />
                 <Route path="email" element={<EmailSettings />} />
-                <Route path="sites" element={<SiteManager />} />
+                <Route path="sites" element={<FeatureGuard feature="siteManagement"><SiteManager /></FeatureGuard>} />
+                <Route path="templates" element={<FeatureGuard feature="templateManagement"><TemplateManager /></FeatureGuard>} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 

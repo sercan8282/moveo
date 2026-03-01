@@ -12,17 +12,19 @@ const navItems = [
   { key: 'homepage', path: '/admin/homepage', icon: '🏠' },
   { key: 'footer', path: '/admin/footer', icon: '⬇' },
   { key: 'themes', path: '/admin/themes', icon: '🎨' },
+  { key: 'navigation', path: '/admin/navigation', icon: '🧭' },
   { key: 'vehicleTypes', path: '/admin/vehicle-types', icon: '🚛', roles: ['SUPER_ADMIN', 'ADMIN'] },
   { key: 'quotes', path: '/admin/quotes', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN'] },
   { key: 'users', path: '/admin/users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN'] },
   { key: 'company', path: '/admin/company', icon: '🏢', roles: ['SUPER_ADMIN', 'ADMIN'] },
   { key: 'emailSettings', path: '/admin/email', icon: '📧', roles: ['SUPER_ADMIN', 'ADMIN'] },
-  { key: 'sites', path: '/admin/sites', icon: '🌐', roles: ['SUPER_ADMIN'] },
+  { key: 'sites', path: '/admin/sites', icon: '🌐', roles: ['SUPER_ADMIN'], feature: 'siteManagement' },
+  { key: 'templates', path: '/admin/templates', icon: '📦', roles: ['SUPER_ADMIN', 'ADMIN'], feature: 'templateManagement' },
   { key: 'settings', path: '/admin/settings', icon: '⚙' , roles: ['SUPER_ADMIN', 'ADMIN'] },
 ];
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, features } = useAuth();
   const { t, language, changeLanguage } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -35,8 +37,11 @@ export default function AdminLayout() {
   };
 
   const filteredNav = navItems.filter(item => {
-    if (!item.roles) return true;
-    return item.roles.includes(user?.role);
+    // Check role requirement
+    if (item.roles && !item.roles.includes(user?.role)) return false;
+    // Check feature requirement
+    if (item.feature && !features[item.feature]) return false;
+    return true;
   });
 
   return (

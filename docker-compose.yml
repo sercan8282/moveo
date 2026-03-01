@@ -87,6 +87,7 @@ services:
       - PORT=4000
       - SITE_NAME=${SITE_NAME:-moveo-bv.nl}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-nl}
+      - IS_MAIN_SITE=true
     volumes:
       - uploads_data:/app/uploads
       - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for site orchestration

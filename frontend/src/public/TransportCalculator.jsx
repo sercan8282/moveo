@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const API = import.meta.env.VITE_API_URL || '/api';
 
 export default function TransportCalculator() {
+  const location = useLocation();
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [startAddress, setStartAddress] = useState('');
@@ -12,6 +14,7 @@ export default function TransportCalculator() {
   const [isExpress, setIsExpress] = useState(false);
   const [priceResult, setPriceResult] = useState(null);
   const [calculating, setCalculating] = useState(false);
+  const [prefillVehicleId, setPrefillVehicleId] = useState(null);
 
   // Route info from backend
   const [routeInfo, setRouteInfo] = useState(null);
@@ -37,10 +40,35 @@ export default function TransportCalculator() {
   const polylineRef = useRef(null);
   const markersRef = useRef([]);
 
+  // Read query params on mount to prefill from quote card
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const from = params.get('from');
+    const to = params.get('to');
+    const domestic = params.get('domestic');
+    const vehicle = params.get('vehicle');
+    
+    if (from) setStartAddress(from);
+    if (to) setEndAddress(to);
+    if (domestic !== null) setIsDomestic(domestic === '1');
+    if (vehicle) setPrefillVehicleId(vehicle);
+  }, [location.search]);
+
   useEffect(() => {
     fetchVehicleTypes();
     loadGoogleMaps();
   }, []);
+  
+  // Select prefilled vehicle after vehicle types are loaded
+  useEffect(() => {
+    if (prefillVehicleId && vehicleTypes.length > 0) {
+      const vehicle = vehicleTypes.find(v => String(v.id) === String(prefillVehicleId));
+      if (vehicle) {
+        setSelectedVehicle(vehicle);
+        setPrefillVehicleId(null); // Clear so it doesn't re-trigger
+      }
+    }
+  }, [prefillVehicleId, vehicleTypes]);
 
   async function fetchVehicleTypes() {
     try {
@@ -48,7 +76,7 @@ export default function TransportCalculator() {
       if (res.ok) {
         const data = await res.json();
         setVehicleTypes(data);
-        if (data.length > 0) setSelectedVehicle(data[0]);
+        if (data.length > 0 && !prefillVehicleId) setSelectedVehicle(data[0]);
       }
     } catch (err) { console.error('Failed to load vehicle types:', err); }
   }

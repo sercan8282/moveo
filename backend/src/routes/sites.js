@@ -38,6 +38,57 @@ router.use(authenticate);
 router.use(authorize('SUPER_ADMIN'));
 
 /**
+ * GET /api/sites/images
+ * Get info about current Moveo Docker images
+ */
+router.get('/images', async (req, res) => {
+  try {
+    const images = await dockerOrchestrator.getImageInfo();
+    res.json(images);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Track build status
+let buildStatus = { building: false, lastBuild: null, result: null };
+
+/**
+ * GET /api/sites/images/status
+ * Get current build status
+ */
+router.get('/images/status', async (req, res) => {
+  res.json(buildStatus);
+});
+
+/**
+ * POST /api/sites/images/build
+ * Rebuild Docker images from source (nginx + site-backend)
+ */
+router.post('/images/build', async (req, res) => {
+  if (buildStatus.building) {
+    return res.status(400).json({ error: 'Build already in progress' });
+  }
+
+  buildStatus = { building: true, lastBuild: new Date(), result: null };
+  
+  // Respond immediately
+  res.json({ message: 'Image build started', status: 'building' });
+
+  // Build in background
+  setImmediate(async () => {
+    try {
+      const result = await dockerOrchestrator.rebuildImages();
+      buildStatus = { building: false, lastBuild: new Date(), result };
+      console.log('[build-images] Build completed:', result.success ? 'SUCCESS' : 'FAILURE');
+    } catch (error) {
+      buildStatus = { building: false, lastBuild: new Date(), result: { success: false, error: error.message } };
+      console.error('[build-images] Build failed:', error.message);
+    }
+  });
+});
+
+/**
  * GET /api/sites
  * List all managed sites
  */
@@ -114,6 +165,11 @@ router.post('/', async (req, res) => {
     const slug = generateSlug(name);
     const containerPrefix = `site-${slug}`;
     
+    // Sanitize domain: only accept real domains (not empty, not localhost)
+    const sanitizedDomain = domain && domain !== 'localhost' && domain.includes('.') 
+      ? domain.trim() 
+      : null;
+    
     // Find 5 available ports: nginx, npm-http, npm-https, npm-admin, portainer
     const [nginxPort, npmHttpPort, npmHttpsPort, npmAdminPort, portainerPort] = 
       await dockerOrchestrator.findAvailablePorts(5, 8100);
@@ -127,7 +183,7 @@ router.post('/', async (req, res) => {
       data: {
         name,
         slug,
-        domain: domain || null,
+        domain: sanitizedDomain,
         description: description || null,
         status: 'PENDING',
         nginxPort,
@@ -298,6 +354,77 @@ router.post('/:id/start', async (req, res) => {
 });
 
 /**
+ * POST /api/sites/:id/rebuild
+ * Rebuild site containers with latest images (nginx + backend)
+ * Preserves data (postgres volumes)
+ */
+router.post('/:id/rebuild', async (req, res) => {
+  const siteId = parseInt(req.params.id);
+  
+  try {
+    const site = await prisma.managedSite.findUnique({
+      where: { id: siteId }
+    });
+    
+    if (!site) {
+      return res.status(404).json({ error: 'Site not found' });
+    }
+    
+    if (site.status !== 'RUNNING' && site.status !== 'STOPPED') {
+      return res.status(400).json({ error: 'Site must be running or stopped to rebuild' });
+    }
+    
+    // Update status
+    await prisma.managedSite.update({
+      where: { id: siteId },
+      data: { status: 'REBUILDING', errorMessage: null }
+    });
+    
+    // Start rebuild (async)
+    res.json({ message: 'Rebuild started', status: 'REBUILDING' });
+    
+    // Rebuild in background
+    setImmediate(async () => {
+      try {
+        const result = await dockerOrchestrator.rebuildSite(site.containerPrefix, {
+          slug: site.slug,
+          name: site.name,
+          dbPassword: site.dbPassword,
+          jwtSecret: site.jwtSecret,
+          adminEmail: site.adminEmail,
+          adminPassword: site.adminPassword
+        });
+        
+        await prisma.managedSite.update({
+          where: { id: siteId },
+          data: {
+            status: 'RUNNING',
+            nginxContainerId: result.containers?.nginx,
+            backendContainerId: result.containers?.backend,
+            lastHealthCheck: new Date()
+          }
+        });
+        
+        console.log(`[${site.slug}] Rebuild completed successfully`);
+      } catch (error) {
+        console.error(`[${site.slug}] Rebuild failed:`, error);
+        await prisma.managedSite.update({
+          where: { id: siteId },
+          data: {
+            status: 'ERROR',
+            errorMessage: `Rebuild failed: ${error.message}`
+          }
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error starting rebuild:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * DELETE /api/sites/:id
  * Remove a site completely (containers + volumes)
  */
@@ -371,12 +498,15 @@ router.get('/:id/credentials', async (req, res) => {
       return res.status(404).json({ error: 'Site not found' });
     }
     
+    // Only use domain if it's a real domain (not empty, not localhost)
+    const hasRealDomain = site.domain && site.domain !== 'localhost' && site.domain.includes('.');
+    
     res.json({
       ...site,
-      accessUrl: site.domain 
+      accessUrl: hasRealDomain 
         ? `https://${site.domain}` 
         : `http://localhost:${site.nginxPort}`,
-      adminUrl: site.domain
+      adminUrl: hasRealDomain
         ? `https://${site.domain}/admin`
         : `http://localhost:${site.nginxPort}/admin`
     });

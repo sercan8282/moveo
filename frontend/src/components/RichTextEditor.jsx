@@ -1,4 +1,5 @@
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Extension } from '@tiptap/react';
+import { useState, useRef, useEffect } from 'react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextStyle from '@tiptap/extension-text-style';
@@ -14,16 +15,97 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import { useLanguage } from '../context/LanguageContext';
 
+// Link effect options
+const LINK_EFFECTS = [
+  { value: '', label: 'Standaard' },
+  { value: 'link-effect-underline', label: 'Onderstrepen (grow)' },
+  { value: 'link-effect-highlight', label: 'Achtergrond highlight' },
+  { value: 'link-effect-glow', label: 'Glow effect' },
+  { value: 'link-effect-button', label: 'Knop stijl' },
+  { value: 'link-effect-slide', label: 'Slide achtergrond' },
+  { value: 'link-effect-border', label: 'Border effect' },
+  { value: 'link-effect-arrow', label: 'Met pijl' },
+];
+
+// Custom FontSize extension
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addOptions() {
+    return { types: ['textStyle'] };
+  },
+  addGlobalAttributes() {
+    return [{
+      types: this.options.types,
+      attributes: {
+        fontSize: {
+          default: null,
+          parseHTML: element => element.style.fontSize?.replace(/['"]+/g, ''),
+          renderHTML: attributes => {
+            if (!attributes.fontSize) return {};
+            return { style: `font-size: ${attributes.fontSize}` };
+          },
+        },
+      },
+    }];
+  },
+  addCommands() {
+    return {
+      setFontSize: fontSize => ({ chain }) => chain().setMark('textStyle', { fontSize }).run(),
+      unsetFontSize: () => ({ chain }) => chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run(),
+    };
+  },
+});
+
 const MenuBar = ({ editor }) => {
   const { t } = useLanguage();
+  const [showLinkPopup, setShowLinkPopup] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkEffect, setLinkEffect] = useState('');
+  const linkPopupRef = useRef(null);
   
   if (!editor) return null;
 
-  const setLink = () => {
-    const url = window.prompt('URL:');
-    if (url) {
-      editor.chain().focus().setLink({ href: url }).run();
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (linkPopupRef.current && !linkPopupRef.current.contains(e.target)) {
+        setShowLinkPopup(false);
+      }
+    };
+    if (showLinkPopup) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLinkPopup]);
+
+  const openLinkPopup = () => {
+    // Check if there's already a link and pre-fill values
+    const attrs = editor.getAttributes('link');
+    setLinkUrl(attrs.href || '');
+    // Try to get existing class
+    const existingClass = attrs.class || '';
+    const existingEffect = LINK_EFFECTS.find(e => e.value && existingClass.includes(e.value));
+    setLinkEffect(existingEffect?.value || '');
+    setShowLinkPopup(true);
+  };
+
+  const applyLink = () => {
+    if (linkUrl) {
+      editor.chain().focus().setLink({ 
+        href: linkUrl,
+        class: linkEffect || undefined
+      }).run();
+    }
+    setShowLinkPopup(false);
+    setLinkUrl('');
+    setLinkEffect('');
+  };
+
+  const removeLink = () => {
+    editor.chain().focus().unsetLink().run();
+    setShowLinkPopup(false);
+    setLinkUrl('');
+    setLinkEffect('');
   };
 
   const addImage = () => {
@@ -66,18 +148,24 @@ const MenuBar = ({ editor }) => {
         </select>
       </div>
 
-      {/* Heading */}
+      {/* Font Size */}
       <div className="flex items-center gap-1 border-r border-gray-300 pr-2 mr-1">
-        {[1, 2, 3, 4].map(level => (
-          <button
-            key={level}
-            onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
-            className={editor.isActive('heading', { level }) ? 'is-active' : ''}
-            title={`H${level}`}
-          >
-            H{level}
-          </button>
-        ))}
+        <select
+          onChange={(e) => {
+            if (e.target.value) {
+              editor.chain().focus().setFontSize(e.target.value).run();
+            } else {
+              editor.chain().focus().unsetFontSize().run();
+            }
+          }}
+          className="text-xs border border-gray-300 rounded px-1 py-1 bg-white"
+          value=""
+        >
+          <option value="">Grootte</option>
+          {fontSizes.map(size => (
+            <option key={size} value={size}>{size.replace('px', '')}</option>
+          ))}
+        </select>
       </div>
 
       {/* Basic formatting */}
@@ -182,10 +270,60 @@ const MenuBar = ({ editor }) => {
       </div>
 
       {/* Insert */}
-      <div className="flex items-center gap-1 border-r border-gray-300 pr-2 mr-1">
-        <button onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''} title="Link">
-          🔗
-        </button>
+      <div className="flex items-center gap-1 border-r border-gray-300 pr-2 mr-1 relative">
+        <div className="relative">
+          <button onClick={openLinkPopup} className={editor.isActive('link') ? 'is-active' : ''} title="Link">
+            🔗
+          </button>
+          {showLinkPopup && (
+            <div 
+              ref={linkPopupRef}
+              className="absolute z-50 top-full left-0 mt-1 p-3 bg-white rounded-lg shadow-xl border w-64"
+            >
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">URL</label>
+                  <input
+                    type="text"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Link effect</label>
+                  <select
+                    value={linkEffect}
+                    onChange={(e) => setLinkEffect(e.target.value)}
+                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded"
+                  >
+                    {LINK_EFFECTS.map(effect => (
+                      <option key={effect.value} value={effect.value}>{effect.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={applyLink}
+                    className="flex-1 px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded hover:bg-blue-600"
+                  >
+                    Toepassen
+                  </button>
+                  {editor.isActive('link') && (
+                    <button
+                      onClick={removeLink}
+                      className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded hover:bg-red-600"
+                    >
+                      Verwijder
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
         <button onClick={addImage} title="Image">
           🖼
         </button>
@@ -239,9 +377,15 @@ export default function RichTextEditor({ content, onChange, placeholder }) {
       TextStyle,
       Color,
       FontFamily,
+      FontSize,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      Link.configure({ openOnClick: false }),
+      Link.configure({ 
+        openOnClick: false,
+        HTMLAttributes: {
+          class: null,
+        },
+      }),
       Image.configure({ inline: false, allowBase64: true }),
       Table.configure({ resizable: true }),
       TableRow,

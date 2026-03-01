@@ -229,6 +229,7 @@ model QuoteRequest {
 enum SiteStatus {
   PENDING
   DEPLOYING
+  REBUILDING
   RUNNING
   STOPPED
   ERROR
@@ -275,4 +276,28 @@ model ManagedSite {
   updatedAt       DateTime   @updatedAt
 
   @@map("managed_sites")
+}
+
+// =============================================================================
+// Website Templates System
+// =============================================================================
+
+model Template {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  thumbnail   String?  // URL to preview image
+  category    String   @default("general") // transport, corporate, creative, etc.
+  version     String   @default("1.0")
+  
+  // Complete template data as JSON
+  // Contains: theme, pages, homepage, menus, footer, settings
+  data        Json
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("templates")
 }

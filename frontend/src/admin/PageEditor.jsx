@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import RichTextEditor from '../components/RichTextEditor';
 import MediaLibrary from '../components/MediaLibrary';
 import { PageBuilder, createRow } from '../components/PageBuilder';
+import CanvasBuilder from '../components/PageBuilder/CanvasBuilder';
 import toast from 'react-hot-toast';
 
 export default function PageEditor() {
@@ -27,6 +28,8 @@ export default function PageEditor() {
   });
   const [editorMode, setEditorMode] = useState('builder');
   const [builderRows, setBuilderRows] = useState([]);
+  const [canvasElements, setCanvasElements] = useState([]);
+  const [canvasSettings, setCanvasSettings] = useState({ width: 1200, height: 800, bgColor: '#ffffff' });
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -61,6 +64,10 @@ export default function PageEditor() {
       if (content.rows && Array.isArray(content.rows)) {
         setEditorMode('builder');
         setBuilderRows(content.rows);
+      } else if (content.canvasElements && Array.isArray(content.canvasElements)) {
+        setEditorMode('canvas');
+        setCanvasElements(content.canvasElements);
+        if (content.canvasSettings) setCanvasSettings(content.canvasSettings);
       } else {
         setEditorMode('classic');
       }
@@ -113,6 +120,8 @@ export default function PageEditor() {
       let contentData;
       if (editorMode === 'builder') {
         contentData = { rows: builderRows, mode: 'builder' };
+      } else if (editorMode === 'canvas') {
+        contentData = { canvasElements, canvasSettings, mode: 'canvas' };
       } else {
         contentData = { html: form.content, mode: 'classic' };
       }
@@ -149,6 +158,9 @@ export default function PageEditor() {
     if (mode === editorMode) return;
     if (mode === 'builder' && builderRows.length === 0) {
       setBuilderRows([createRow([12])]);
+    }
+    if (mode === 'canvas' && canvasElements.length === 0) {
+      // Canvas starts empty, user adds elements
     }
     setEditorMode(mode);
   };
@@ -205,6 +217,11 @@ export default function PageEditor() {
                   editorMode === 'builder' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
                 🧱 Page Builder
               </button>
+              <button type="button" onClick={() => switchMode('canvas')}
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  editorMode === 'canvas' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+                🎨 Canvas Builder
+              </button>
               <button type="button" onClick={() => switchMode('classic')}
                 className={`flex-1 py-3 px-4 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                   editorMode === 'classic' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
@@ -213,11 +230,28 @@ export default function PageEditor() {
             </div>
 
             {/* Content Editor */}
-            {editorMode === 'builder' ? (
+            {editorMode === 'builder' && (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <PageBuilder rows={builderRows} onChange={setBuilderRows} />
+                <PageBuilder rows={builderRows} onChange={setBuilderRows} onSave={() => {
+                  // Trigger form save via DOM event
+                  const form = document.querySelector('form');
+                  if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }} />
               </div>
-            ) : (
+            )}
+            
+            {editorMode === 'canvas' && (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ height: '70vh' }}>
+                <CanvasBuilder 
+                  elements={canvasElements} 
+                  onChange={setCanvasElements}
+                  canvasSettings={canvasSettings}
+                  onSettingsChange={setCanvasSettings}
+                />
+              </div>
+            )}
+            
+            {editorMode === 'classic' && (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <label className="block text-sm font-medium text-gray-700 mb-2">{t('pageContent')}</label>
                 <RichTextEditor content={form.content} onChange={(html) => setForm(prev => ({ ...prev, content: html }))} />

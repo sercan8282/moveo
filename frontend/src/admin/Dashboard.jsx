@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { BUILD_INFO } from '../buildInfo';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -122,6 +123,16 @@ export default function Dashboard() {
             <p className="text-gray-400 text-sm">{t('noResults')}</p>
           )}
         </div>
+      </div>
+
+      {/* Build Info */}
+      <div className="text-center py-4 border-t border-gray-100">
+        <p className="text-xs text-gray-400">
+          Build: <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{BUILD_INFO.buildTime}</span>
+          {BUILD_INFO.gitHash && BUILD_INFO.gitHash !== 'unknown' && (
+            <span className="ml-2">Git: <span className="font-mono">{BUILD_INFO.gitHash}</span></span>
+          )}
+        </p>
       </div>
     </div>
   );

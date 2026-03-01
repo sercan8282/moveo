@@ -6,8 +6,17 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [features, setFeatures] = useState({ siteManagement: false, templateManagement: false });
 
   useEffect(() => {
+    // Fetch available features
+    api.get('/features').then(res => {
+      setFeatures(res.data);
+    }).catch(() => {
+      // Default to no special features for child sites
+      setFeatures({ siteManagement: false, templateManagement: false });
+    });
+
     const token = localStorage.getItem('moveo_token');
     const savedUser = localStorage.getItem('moveo_user');
     
@@ -55,7 +64,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, features }}>
       {children}
     </AuthContext.Provider>
   );

@@ -8,6 +8,8 @@ export default function SiteManager() {
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dockerStatus, setDockerStatus] = useState(null);
+  const [images, setImages] = useState([]);
+  const [buildStatus, setBuildStatus] = useState({ building: false });
   const [showForm, setShowForm] = useState(false);
   const [deploying, setDeploying] = useState({});
   const [form, setForm] = useState({
@@ -31,18 +33,25 @@ export default function SiteManager() {
   useEffect(() => {
     loadData();
     // Poll for status updates every 10 seconds
-    const interval = setInterval(loadSites, 10000);
+    const interval = setInterval(() => {
+      loadSites();
+      loadBuildStatus();
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
     try {
-      const [sitesRes, dockerRes] = await Promise.all([
+      const [sitesRes, dockerRes, imagesRes, buildRes] = await Promise.all([
         api.get('/sites'),
-        api.get('/sites/docker-status')
+        api.get('/sites/docker-status'),
+        api.get('/sites/images').catch(() => ({ data: [] })),
+        api.get('/sites/images/status').catch(() => ({ data: { building: false } }))
       ]);
       setSites(sitesRes.data);
       setDockerStatus(dockerRes.data);
+      setImages(imagesRes.data);
+      setBuildStatus(buildRes.data);
     } catch (error) {
       toast.error('Kon data niet laden');
     } finally {
@@ -57,6 +66,40 @@ export default function SiteManager() {
     } catch (error) {
       // Silent fail for polling
     }
+  };
+
+  const loadBuildStatus = async () => {
+    try {
+      const res = await api.get('/sites/images/status');
+      setBuildStatus(res.data);
+      // Also refresh images after build completes
+      if (!res.data.building && buildStatus.building) {
+        const imagesRes = await api.get('/sites/images');
+        setImages(imagesRes.data);
+      }
+    } catch (error) {
+      // Silent fail
+    }
+  };
+
+  const handleBuildImages = async () => {
+    setConfirmModal({
+      show: true,
+      title: '🔨 Images Herbouwen',
+      message: 'Dit herbouwt de Docker images met de nieuwste code.\n\n⏱️ Dit kan 5-10 minuten duren.\n\nNa het bouwen kun je sites updaten met de "Rebuild" knop.',
+      confirmText: 'Images Bouwen',
+      confirmClass: 'bg-purple-600 hover:bg-purple-700',
+      onConfirm: async () => {
+        try {
+          await api.post('/sites/images/build');
+          toast.success('Image build gestart! Dit kan enkele minuten duren.');
+          setBuildStatus({ building: true, lastBuild: new Date() });
+        } catch (error) {
+          toast.error(error.response?.data?.error || 'Build mislukt');
+        }
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   };
 
   const handleCreate = async (e) => {
@@ -140,6 +183,26 @@ export default function SiteManager() {
     });
   };
 
+  const handleRebuild = async (site) => {
+    setConfirmModal({
+      show: true,
+      title: '🔄 Site Herbouwen',
+      message: `Dit herbouwt "${site.name}" met de nieuwste updates.\n\n✓ Database blijft behouden\n✓ Uploads blijven behouden\n✓ Instellingen blijven behouden\n\nDe site is even niet bereikbaar tijdens het herbouwen.`,
+      confirmText: 'Herbouwen',
+      confirmClass: 'bg-blue-600 hover:bg-blue-700',
+      onConfirm: async () => {
+        try {
+          await api.post(`/sites/${site.id}/rebuild`);
+          toast.success('Rebuild gestart! Dit kan enkele minuten duren.');
+          loadSites();
+        } catch (error) {
+          toast.error(error.response?.data?.error || 'Rebuild mislukt');
+        }
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
+  };
+
   const showCredentials = async (site) => {
     try {
       const res = await api.get(`/sites/${site.id}/credentials`);
@@ -153,6 +216,7 @@ export default function SiteManager() {
     const styles = {
       PENDING: 'bg-gray-100 text-gray-700',
       DEPLOYING: 'bg-yellow-100 text-yellow-700 animate-pulse',
+      REBUILDING: 'bg-blue-100 text-blue-700 animate-pulse',
       RUNNING: 'bg-green-100 text-green-700',
       STOPPED: 'bg-orange-100 text-orange-700',
       ERROR: 'bg-red-100 text-red-700'
@@ -160,6 +224,7 @@ export default function SiteManager() {
     const labels = {
       PENDING: 'Wacht op Deploy',
       DEPLOYING: 'Deploying...',
+      REBUILDING: 'Herbouwen...',
       RUNNING: 'Actief',
       STOPPED: 'Gestopt',
       ERROR: 'Fout'
@@ -220,6 +285,37 @@ export default function SiteManager() {
           </div>
         </div>
       </div>
+
+      {/* Images & Build Section */}
+      {dockerStatus?.connected && (
+        <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-purple-900">Docker Images</p>
+              <div className="flex flex-wrap items-center gap-4 mt-1">
+                {Array.isArray(images) && images.length > 0 ? (
+                  images.map((img, i) => (
+                    <span key={i} className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded">
+                      {img.tags?.[0]} • {img.id} • {img.size}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-purple-600">Geen Moveo images gevonden</span>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-purple-600 mb-1">Images herbouwen vanuit terminal:</p>
+              <code className="text-xs bg-purple-100 px-2 py-1 rounded text-purple-800">
+                docker-compose build nginx site-backend
+              </code>
+            </div>
+          </div>
+          <div className="mt-3 p-2 rounded bg-blue-50 text-blue-700 text-xs">
+            💡 <strong>Update workflow:</strong> 1) Code wijzigen → 2) Images herbouwen in terminal → 3) "Rebuild" klikken per site
+          </div>
+        </div>
+      )}
 
       {/* Sites List */}
       {sites.length === 0 ? (
@@ -330,6 +426,12 @@ export default function SiteManager() {
                           Credentials
                         </button>
                         <button
+                          onClick={() => handleRebuild(site)}
+                          className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
+                        >
+                          🔄 Rebuild
+                        </button>
+                        <button
                           onClick={() => handleStop(site)}
                           className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-sm hover:bg-orange-200"
                         >
@@ -338,12 +440,20 @@ export default function SiteManager() {
                       </>
                     )}
                     {site.status === 'STOPPED' && (
-                      <button
-                        onClick={() => handleStart(site)}
-                        className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200"
-                      >
-                        Start
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleStart(site)}
+                          className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200"
+                        >
+                          Start
+                        </button>
+                        <button
+                          onClick={() => handleRebuild(site)}
+                          className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
+                        >
+                          🔄 Rebuild
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={() => handleDelete(site)}

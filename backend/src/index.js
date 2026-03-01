@@ -22,6 +22,7 @@ const vehicleTypeRoutes = require('./routes/vehicleTypes');
 const calculatorRoutes = require('./routes/calculator');
 const emailSettingsRoutes = require('./routes/emailSettings');
 const sitesRoutes = require('./routes/sites');
+const templatesRoutes = require('./routes/templates');
 
 const app = express();
 
@@ -63,6 +64,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Features endpoint - tells frontend which features are available
+app.get('/api/features', (req, res) => {
+  res.json({
+    siteManagement: process.env.IS_MAIN_SITE === 'true',
+    templateManagement: process.env.IS_MAIN_SITE === 'true'
+  });
+});
+
 // API routes
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/pages', apiLimiter, pageRoutes);
@@ -78,6 +87,7 @@ app.use('/api/vehicle-types', apiLimiter, vehicleTypeRoutes);
 app.use('/api/calculator', apiLimiter, calculatorRoutes);
 app.use('/api/email-settings', apiLimiter, emailSettingsRoutes);
 app.use('/api/sites', apiLimiter, sitesRoutes);
+app.use('/api/templates', apiLimiter, templatesRoutes);
 app.use('/api/public', publicRoutes);
 
 // Error handling

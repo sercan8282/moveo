@@ -395,33 +395,136 @@ export default function MenuManager() {
 
                 {/* Hover Effect */}
                 <div className="mb-3">
-                  <label className="block text-xs font-medium text-gray-600 mb-2">Hover Effect</label>
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {[
-                      { value: 'none', label: 'Geen' },
-                      { value: 'scale', label: 'Scale' },
-                      { value: 'glow', label: 'Glow' },
-                      { value: 'lift', label: 'Lift' },
-                      { value: 'bounce', label: 'Bounce' },
-                      { value: 'pulse', label: 'Pulse' },
-                      { value: 'shake', label: 'Shake' },
-                      { value: 'rotate', label: 'Rotate' },
-                      { value: 'slide', label: 'Slide' },
-                      { value: 'flip', label: 'Flip' },
-                    ].map(effect => (
-                      <button
-                        key={effect.value}
-                        type="button"
-                        onClick={() => setItemForm(prev => ({...prev, styles: {...prev.styles, effect: effect.value}}))}
-                        className={`px-1.5 py-1 rounded text-[10px] border-2 transition-all ${
-                          itemForm.styles?.effect === effect.value
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                        }`}
-                      >
-                        {effect.label}
-                      </button>
-                    ))}
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Button Effect</label>
+                  
+                  {/* Effect Categories */}
+                  <div className="space-y-2">
+                    {/* Simple Effects */}
+                    <div className="text-[10px] text-gray-400 font-medium">Basis</div>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[
+                        { value: 'none', label: 'Geen' },
+                        { value: 'scale', label: 'Scale' },
+                        { value: 'lift', label: 'Lift' },
+                        { value: 'scalePop', label: 'Pop' },
+                        { value: 'press3d', label: '3D Press' },
+                      ].map(effect => (
+                        <button
+                          key={effect.value}
+                          type="button"
+                          onClick={() => setItemForm(prev => ({...prev, styles: {...prev.styles, effect: effect.value}}))}
+                          className={`px-1.5 py-1 rounded text-[10px] border-2 transition-all ${
+                            itemForm.styles?.effect === effect.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                          }`}
+                        >
+                          {effect.label}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Fill Effects */}
+                    <div className="text-[10px] text-gray-400 font-medium mt-2">Fill Animaties</div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[
+                        { value: 'fillLR', label: '→ Links' },
+                        { value: 'fillRL', label: '← Rechts' },
+                        { value: 'fillCenter', label: '↔ Midden' },
+                        { value: 'fillDiagonal', label: '⤡ Diagonaal' },
+                        { value: 'fillBT', label: '↑ Omhoog' },
+                        { value: 'fillTB', label: '↓ Omlaag' },
+                        { value: 'shine', label: '✨ Shine' },
+                        { value: 'ripple', label: '◎ Ripple' },
+                      ].map(effect => (
+                        <button
+                          key={effect.value}
+                          type="button"
+                          onClick={() => setItemForm(prev => ({...prev, styles: {...prev.styles, effect: effect.value}}))}
+                          className={`px-1.5 py-1 rounded text-[10px] border-2 transition-all ${
+                            itemForm.styles?.effect === effect.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                          }`}
+                        >
+                          {effect.label}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Glow & Shadow Effects */}
+                    <div className="text-[10px] text-gray-400 font-medium mt-2">Glow & Shadow</div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[
+                        { value: 'glow', label: 'Glow' },
+                        { value: 'glowPulse', label: 'Pulse Glow' },
+                        { value: 'shadowSpread', label: 'Shadow' },
+                        { value: 'shadowLift', label: 'Lift Shadow' },
+                        { value: 'neon', label: '💡 Neon' },
+                        { value: 'gradientShift', label: '🌈 Gradient' },
+                      ].map(effect => (
+                        <button
+                          key={effect.value}
+                          type="button"
+                          onClick={() => setItemForm(prev => ({...prev, styles: {...prev.styles, effect: effect.value}}))}
+                          className={`px-1.5 py-1 rounded text-[10px] border-2 transition-all ${
+                            itemForm.styles?.effect === effect.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                          }`}
+                        >
+                          {effect.label}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Border & Line Effects */}
+                    <div className="text-[10px] text-gray-400 font-medium mt-2">Border & Underline</div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[
+                        { value: 'borderDraw', label: '▢ Border Draw' },
+                        { value: 'underlineSlide', label: '_ Slide' },
+                        { value: 'underlineCenter', label: '_•_ Center' },
+                      ].map(effect => (
+                        <button
+                          key={effect.value}
+                          type="button"
+                          onClick={() => setItemForm(prev => ({...prev, styles: {...prev.styles, effect: effect.value}}))}
+                          className={`px-1.5 py-1 rounded text-[10px] border-2 transition-all ${
+                            itemForm.styles?.effect === effect.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                          }`}
+                        >
+                          {effect.label}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Fun Effects */}
+                    <div className="text-[10px] text-gray-400 font-medium mt-2">Fun</div>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[
+                        { value: 'bounce', label: 'Bounce' },
+                        { value: 'pulse', label: 'Pulse' },
+                        { value: 'shake', label: 'Shake' },
+                        { value: 'wobble', label: 'Wobble' },
+                        { value: 'heartbeat', label: '💓' },
+                      ].map(effect => (
+                        <button
+                          key={effect.value}
+                          type="button"
+                          onClick={() => setItemForm(prev => ({...prev, styles: {...prev.styles, effect: effect.value}}))}
+                          className={`px-1.5 py-1 rounded text-[10px] border-2 transition-all ${
+                            itemForm.styles?.effect === effect.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                          }`}
+                        >
+                          {effect.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -456,21 +559,38 @@ export default function MenuManager() {
 
                 {/* Preview */}
                 <div className="bg-gray-100 p-4 rounded-lg">
-                  <span className="text-[10px] text-gray-400 block mb-2">Voorbeeld</span>
+                  <span className="text-[10px] text-gray-400 block mb-2">Voorbeeld (hover voor effect)</span>
                   <div className="flex justify-center">
                     <span 
-                      className={`inline-block px-4 py-2 text-sm font-medium transition-all duration-300 cursor-pointer
+                      className={`inline-block px-4 py-2 text-sm font-medium transition-all duration-300 cursor-pointer nav-btn-effect
                         ${itemForm.styles?.shape === 'square' ? 'rounded-none' : ''}
                         ${itemForm.styles?.shape === 'round' ? 'rounded-full' : ''}
                         ${itemForm.styles?.shape === 'parallelogram' ? 'skew-x-[-12deg]' : ''}
                         ${itemForm.styles?.effect === 'scale' ? 'hover:scale-110' : ''}
                         ${itemForm.styles?.effect === 'lift' ? 'hover:-translate-y-1 hover:shadow-lg' : ''}
+                        ${itemForm.styles?.effect === 'bounce' ? 'hover:animate-bounce' : ''}
+                        ${itemForm.styles?.effect === 'pulse' ? 'hover:animate-pulse' : ''}
+                        ${itemForm.styles?.effect === 'shake' ? 'hover:animate-[shake_0.5s_ease-in-out]' : ''}
+                        ${itemForm.styles?.effect && !['none','scale','lift','glow','bounce','pulse','shake'].includes(itemForm.styles?.effect) 
+                          ? `nav-btn-effect-${itemForm.styles?.effect}` : ''
+                        }
                       `}
                       style={{
-                        backgroundColor: itemForm.styles?.bgColor || '#3b82f6',
-                        color: itemForm.styles?.textColor || '#ffffff',
+                        backgroundColor: itemForm.styles?.effect === 'neon' || itemForm.styles?.effect === 'borderDraw' 
+                          ? 'transparent' 
+                          : (itemForm.styles?.bgColor || '#3b82f6'),
+                        color: itemForm.styles?.effect === 'neon' 
+                          ? (itemForm.styles?.bgColor || '#3b82f6') 
+                          : (itemForm.styles?.textColor || '#ffffff'),
                         borderRadius: itemForm.styles?.shape === 'none' ? '0' : (itemForm.styles?.shape === 'round' ? '9999px' : '8px'),
-                        boxShadow: itemForm.styles?.effect === 'glow' ? `0 0 20px ${itemForm.styles?.bgColor || '#3b82f6'}80` : 'none',
+                        boxShadow: itemForm.styles?.effect === 'glow' ? `0 0 20px ${itemForm.styles?.bgColor || '#3b82f6'}80` : 
+                                   itemForm.styles?.effect === 'press3d' ? `0 4px 0 ${itemForm.styles?.hoverColor || '#1e40af'}` : 'none',
+                        '--btn-color': itemForm.styles?.bgColor || '#3b82f6',
+                        '--btn-hover-color': itemForm.styles?.hoverColor || '#2563eb',
+                        '--btn-glow-color': `${itemForm.styles?.bgColor || '#3b82f6'}80`,
+                        '--btn-shadow-color': itemForm.styles?.hoverColor || '#1e40af',
+                        border: itemForm.styles?.effect === 'neon' || itemForm.styles?.effect === 'borderDraw' 
+                          ? `2px solid ${itemForm.styles?.bgColor || '#3b82f6'}` : 'none',
                       }}
                     >
                       <span className={itemForm.styles?.shape === 'parallelogram' ? 'skew-x-[12deg] inline-block' : ''}>
@@ -478,6 +598,12 @@ export default function MenuManager() {
                       </span>
                     </span>
                   </div>
+                  <p className="text-[10px] text-gray-400 text-center mt-2">
+                    {itemForm.styles?.effect && itemForm.styles?.effect !== 'none' 
+                      ? `Effect: ${itemForm.styles?.effect}` 
+                      : 'Geen effect geselecteerd'
+                    }
+                  </p>
                 </div>
               </div>
             </div>

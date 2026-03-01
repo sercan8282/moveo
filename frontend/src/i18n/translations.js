@@ -51,6 +51,7 @@ export const translations = {
     settings: 'Instellingen',
     company: 'Bedrijfsgegevens',
     themes: 'Thema\'s',
+    navigation: 'Navigatie',
     homepage: 'Homepage',
     footer: 'Footer',
     profile: 'Profiel',
@@ -58,6 +59,7 @@ export const translations = {
     quotes: 'Offertes',
     emailSettings: 'E-mail',
     sites: 'Sites Beheer',
+    templates: 'Templates',
     
     // Dashboard
     welcomeBack: 'Welkom terug',
@@ -244,6 +246,7 @@ export const translations = {
     settings: 'Settings',
     company: 'Company Info',
     themes: 'Themes',
+    navigation: 'Navigation',
     homepage: 'Homepage',
     footer: 'Footer',
     profile: 'Profile',
@@ -251,6 +254,7 @@ export const translations = {
     quotes: 'Quotes',
     emailSettings: 'Email',
     sites: 'Site Manager',
+    templates: 'Templates',
     
     // Dashboard
     welcomeBack: 'Welcome back',

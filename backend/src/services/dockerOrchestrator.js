@@ -6,6 +6,9 @@
 
 const Docker = require('dockerode');
 const crypto = require('crypto');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
 
 // Docker client - connects to Docker daemon via socket
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
@@ -570,6 +573,159 @@ async function removeSite(containerPrefix) {
 }
 
 /**
+ * Rebuild site's nginx and backend containers with latest images
+ * This allows deploying updates without destroying data
+ */
+async function rebuildSite(containerPrefix, siteConfig) {
+  const {
+    slug,
+    name,
+    dbPassword,
+    jwtSecret,
+    adminEmail,
+    adminPassword
+  } = siteConfig;
+
+  const networkName = `${containerPrefix}_network`;
+  const results = { steps: [], success: false };
+
+  const log = (message) => {
+    console.log(`[${slug}] ${message}`);
+    results.steps.push(message);
+  };
+
+  const stackLabels = (service) => ({
+    'com.docker.compose.project': containerPrefix,
+    'com.docker.compose.service': service,
+    'moveo.site.slug': slug,
+    'moveo.site.name': name
+  });
+
+  try {
+    // Get current nginx port from existing container
+    let nginxPort;
+    try {
+      const existingNginx = docker.getContainer(`${containerPrefix}-nginx`);
+      const nginxInfo = await existingNginx.inspect();
+      nginxPort = parseInt(Object.values(nginxInfo.HostConfig.PortBindings['80/tcp'] || [{}])[0]?.HostPort);
+      log(`Found existing nginx on port ${nginxPort}`);
+    } catch (e) {
+      throw new Error('Could not find existing nginx container');
+    }
+
+    // ===================
+    // 1. Stop and remove backend
+    // ===================
+    log('Stopping backend container...');
+    try {
+      const backendContainer = docker.getContainer(`${containerPrefix}-backend`);
+      try { await backendContainer.stop(); } catch (e) { /* already stopped */ }
+      await backendContainer.remove();
+      log('Backend container removed');
+    } catch (e) {
+      log(`Warning: ${e.message}`);
+    }
+
+    // ===================
+    // 2. Stop and remove nginx
+    // ===================
+    log('Stopping nginx container...');
+    try {
+      const nginxContainer = docker.getContainer(`${containerPrefix}-nginx`);
+      try { await nginxContainer.stop(); } catch (e) { /* already stopped */ }
+      await nginxContainer.remove();
+      log('Nginx container removed');
+    } catch (e) {
+      log(`Warning: ${e.message}`);
+    }
+
+    // ===================
+    // 3. Create new backend with latest image
+    // ===================
+    log('Creating new backend container with latest image...');
+    const newBackendContainer = await docker.createContainer({
+      Image: IMAGES.siteBackend,
+      name: `${containerPrefix}-backend`,
+      Labels: stackLabels('backend'),
+      Env: [
+        `DATABASE_URL=postgresql://moveo:${dbPassword}@${containerPrefix}-postgres:5432/moveo_cms?schema=public`,
+        `REDIS_URL=redis://${containerPrefix}-redis:6379`,
+        `JWT_SECRET=${jwtSecret}`,
+        `JWT_EXPIRES_IN=7d`,
+        `NODE_ENV=production`,
+        `PORT=4000`,
+        `SITE_NAME=${name}`,
+        `ADMIN_EMAIL=${adminEmail}`,
+        `ADMIN_PASSWORD=${adminPassword}`
+      ],
+      HostConfig: {
+        NetworkMode: networkName,
+        RestartPolicy: { Name: 'unless-stopped' },
+        Binds: [
+          `${containerPrefix}_uploads:/app/uploads`
+        ]
+      },
+      Healthcheck: {
+        Test: ['CMD-SHELL', 'node -e "const h=require(\'http\');h.get(\'http://localhost:4000/api/health\',(r)=>{process.exit(r.statusCode===200?0:1)}).on(\'error\',()=>process.exit(1))"'],
+        Interval: 15000000000,
+        Timeout: 10000000000,
+        Retries: 30,
+        StartPeriod: 180000000000
+      }
+    });
+    await newBackendContainer.start();
+    log('Backend container started, waiting for health...');
+    await waitForHealthy(newBackendContainer.id, 300000); // 5 min max for migrations
+    log('Backend is healthy');
+
+    // ===================
+    // 4. Create new nginx with latest image
+    // ===================
+    log('Creating new nginx container with latest image...');
+    const newNginxContainer = await docker.createContainer({
+      Image: IMAGES.nginx,
+      name: `${containerPrefix}-nginx`,
+      Labels: stackLabels('nginx'),
+      Env: [
+        `BACKEND_HOST=${containerPrefix}-backend`
+      ],
+      ExposedPorts: {
+        '80/tcp': {}
+      },
+      HostConfig: {
+        NetworkMode: networkName,
+        RestartPolicy: { Name: 'unless-stopped' },
+        PortBindings: {
+          '80/tcp': [{ HostPort: String(nginxPort) }]
+        },
+        Binds: [
+          `${containerPrefix}_uploads:/var/www/uploads:ro`
+        ]
+      }
+    });
+    await newNginxContainer.start();
+    log(`Nginx running on port ${nginxPort}`);
+
+    results.success = true;
+    results.containers = {
+      backend: newBackendContainer.id,
+      nginx: newNginxContainer.id
+    };
+
+    log('========================================');
+    log('REBUILD COMPLETED SUCCESSFULLY!');
+    log('========================================');
+
+    return results;
+
+  } catch (error) {
+    log(`ERROR: ${error.message}`);
+    results.error = error.message;
+    throw error;
+  }
+}
+
+/**
  * Get site status
  */
 async function getSiteStatus(containerPrefix) {
@@ -635,8 +791,98 @@ async function checkDockerConnection() {
   }
 }
 
+/**
+ * Rebuild Docker images from source
+ * This pulls the latest code changes into new images
+ */
+async function rebuildImages() {
+  const results = { steps: [], success: false, nginx: null, siteBackend: null };
+  const workspaceDir = '/app';  // This is where we run from inside Docker
+
+  const log = (message) => {
+    console.log(`[build-images] ${message}`);
+    results.steps.push(message);
+  };
+
+  try {
+    // Check if we're running inside Docker (we can't build from inside)
+    // If so, we need to trigger a build from the host via docker-compose
+    log('Starting image rebuild...');
+
+    // Build nginx image
+    log('Building nginx image...');
+    try {
+      const { stdout, stderr } = await execAsync('docker-compose build --no-cache nginx', {
+        cwd: workspaceDir,
+        timeout: 600000  // 10 minutes
+      });
+      log('Nginx image built successfully');
+      results.nginx = 'success';
+      if (stdout) log(`stdout: ${stdout.slice(0, 500)}`);
+    } catch (error) {
+      log(`Nginx build failed: ${error.message}`);
+      results.nginx = error.message;
+    }
+
+    // Build site-backend image
+    log('Building site-backend image...');
+    try {
+      const { stdout, stderr } = await execAsync('docker-compose build --no-cache site-backend', {
+        cwd: workspaceDir,
+        timeout: 600000  // 10 minutes
+      });
+      log('Site-backend image built successfully');
+      results.siteBackend = 'success';
+      if (stdout) log(`stdout: ${stdout.slice(0, 500)}`);
+    } catch (error) {
+      log(`Site-backend build failed: ${error.message}`);
+      results.siteBackend = error.message;
+    }
+
+    results.success = results.nginx === 'success' && results.siteBackend === 'success';
+    
+    if (results.success) {
+      log('========================================');
+      log('ALL IMAGES REBUILT SUCCESSFULLY!');
+      log('========================================');
+      log('You can now use "Rebuild" on sites to apply updates.');
+    }
+
+    return results;
+
+  } catch (error) {
+    log(`ERROR: ${error.message}`);
+    results.error = error.message;
+    throw error;
+  }
+}
+
+/**
+ * Get info about current images
+ */
+async function getImageInfo() {
+  try {
+    const images = await docker.listImages();
+    const moveoImages = images.filter(img => 
+      img.RepoTags?.some(tag => tag.startsWith('moveo-'))
+    );
+    
+    return moveoImages.map(img => ({
+      tags: img.RepoTags,
+      id: img.Id.slice(7, 19),
+      created: new Date(img.Created * 1000).toISOString(),
+      size: Math.round(img.Size / 1024 / 1024) + ' MB'
+    }));
+  } catch (error) {
+    return { error: error.message };
+  }
+}
+
 module.exports = {
   deploySite,
+  rebuildSite,
+  rebuildImages,
+  getImageInfo,
   stopSite,
   startSite,
   removeSite,

@@ -7,6 +7,10 @@ COPY frontend/package*.json ./
 RUN npm install
 
 COPY frontend/ .
+
+# Generate build info with timestamp
+RUN echo "export const BUILD_INFO = { buildTime: '$(date '+%Y-%m-%d %H:%M:%S')', version: '1.0.0' };" > src/buildInfo.js
+
 RUN npm run build
 
 # Stage 2: Nginx with custom config + frontend files

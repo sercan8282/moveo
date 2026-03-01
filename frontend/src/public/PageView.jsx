@@ -4,6 +4,7 @@ import api from '../api/client';
 import ContactForm from '../components/ContactForm';
 import GoogleMap from '../components/GoogleMap';
 import BlockRenderer from '../components/BlockRenderer';
+import CanvasRenderer from '../components/CanvasRenderer';
 
 export default function PageView() {
   const { slug } = useParams();
@@ -56,6 +57,7 @@ export default function PageView() {
 
   const pageContent = typeof page.content === 'string' ? JSON.parse(page.content) : (page.content || {});
   const isBuilder = pageContent.mode === 'builder' && Array.isArray(pageContent.rows) && pageContent.rows.length > 0;
+  const isCanvas = pageContent.mode === 'canvas' && Array.isArray(pageContent.canvasElements);
   const htmlContent = pageContent.html || '';
   const isContact = page.template === 'contact';
 
@@ -206,6 +208,29 @@ export default function PageView() {
           </div>
         )}
         <BlockRenderer rows={pageContent.rows} />
+      </div>
+    );
+  }
+
+  // Canvas page
+  if (isCanvas) {
+    return (
+      <div className="animate-fade-in">
+        {/* Page header */}
+        <div className="py-8 md:py-12" style={{ backgroundColor: 'var(--color-surface, #f8fafc)' }}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--color-text, #0f172a)' }}>
+              {page.title}
+            </h1>
+          </div>
+        </div>
+        {/* Canvas content */}
+        <div className="py-8">
+          <CanvasRenderer 
+            elements={pageContent.canvasElements || []} 
+            settings={pageContent.canvasSettings || {}} 
+          />
+        </div>
       </div>
     );
   }

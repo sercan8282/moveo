@@ -135,6 +135,11 @@ const EFFECT_CATEGORIES = {
       { value: '', label: 'Geen' },
       { value: 'effect-border-glow', label: 'Gloed bij hover' },
       { value: 'effect-border-gradient', label: 'Gradient border' },
+      { value: 'effect-border-draw', label: 'Border Draw (animatie)' },
+      { value: 'effect-border-pulse', label: 'Border Pulse' },
+      { value: 'effect-border-shimmer', label: 'Border Shimmer' },
+      { value: 'effect-border-neon', label: 'Neon Border' },
+      { value: 'effect-border-rainbow', label: 'Rainbow Border' },
     ]
   },
   glass: {

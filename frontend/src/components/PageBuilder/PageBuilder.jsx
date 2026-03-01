@@ -8,7 +8,9 @@ const genId = () => crypto.randomUUID();
 
 const BLOCK_TYPES = [
   { type: 'text', label: 'Tekst', icon: '📝' },
+  { type: 'styledText', label: 'Gestileerde Tekst', icon: '✨' },
   { type: 'image', label: 'Afbeelding', icon: '🖼️' },
+  { type: 'imageCard', label: 'Afbeelding met Kaart', icon: '🎴' },
   { type: 'carousel', label: 'Carousel', icon: '🎠' },
   { type: 'video', label: 'Video', icon: '🎬' },
   { type: 'contactForm', label: 'Contactformulier', icon: '📋' },
@@ -18,11 +20,15 @@ const BLOCK_TYPES = [
   { type: 'divider', label: 'Scheidingslijn', icon: '➖' },
   { type: 'html', label: 'HTML Code', icon: '💻' },
   { type: 'hero', label: 'Hero Banner', icon: '🎯' },
+  { type: 'heroBanner', label: 'Hero met Kaarten', icon: '🏆' },
   { type: 'cards', label: 'Kaarten', icon: '🃏' },
+  { type: 'flipCards', label: 'Flip Kaarten', icon: '🔄' },
+  { type: 'textCards', label: 'Tekst Kaarten', icon: '📐' },
   { type: 'testimonial', label: 'Testimonial', icon: '💬' },
   { type: 'accordion', label: 'Accordion/FAQ', icon: '📂' },
   { type: 'counter', label: 'Teller/Statistiek', icon: '📊' },
   { type: 'iconBox', label: 'Icoon Box', icon: '⭐' },
+  { type: 'countdown', label: 'Countdown Timer', icon: '⏱️' },
 ];
 
 const COLUMN_LAYOUTS = [
@@ -40,7 +46,45 @@ const COLUMN_LAYOUTS = [
 function createBlock(type) {
   const defaults = {
     text: { html: '<p></p>' },
+    styledText: {
+      text: 'Gestileerde tekst',
+      textStyle: 'gradient',
+      fontSize: 64,
+      fontWeight: 'bold',
+      textColor: '#ffffff',
+      gradientFrom: '#00c2ff',
+      gradientTo: '#00fdcf',
+      glowColor: '#00c2ff',
+      outlineColor: '#ffffff',
+      textAlign: 'center',
+      backgroundColor: '',
+      backgroundGradient: '',
+      padding: 24,
+      marginTop: 0,
+      marginBottom: 0,
+    },
     image: { src: '', alt: '', caption: '', objectFit: 'cover' },
+    imageCard: { 
+      image: '', 
+      imageAlt: '',
+      // Card position: 'bottom-right', 'bottom-left', 'bottom-center', 'top-right', 'top-left', 'top-center'
+      cardPosition: 'bottom-right',
+      // Card content
+      icon: '',
+      title: '',
+      subtitle: '',
+      // Icon position relative to text: 'left', 'right', 'top', 'bottom'
+      iconPosition: 'left',
+      // Colors
+      iconColor: '#3b82f6',
+      titleColor: '#111827',
+      subtitleColor: '#6b7280',
+      cardBgColor: '#ffffff',
+      // Border
+      borderColor: '#3b82f6',
+      borderWidth: 4,
+      borderSide: 'right', // 'all', 'left', 'right', 'top', 'bottom', 'none'
+    },
     carousel: { images: [], autoplay: true, interval: 5000, showDots: true, showArrows: true },
     video: { url: '', type: 'youtube', autoplay: false },
     contactForm: {},
@@ -49,12 +93,131 @@ function createBlock(type) {
     spacer: { height: 40 },
     divider: { style: 'solid', color: '#e2e8f0' },
     html: { code: '' },
-    hero: { title: '', subtitle: '', backgroundImage: '', overlay: true, height: '400px', alignment: 'center' },
+    hero: { 
+      title: '', 
+      subtitle: '', 
+      backgroundImage: '', 
+      overlay: true, 
+      height: '400px', 
+      alignment: 'center',
+      // Hero columns system
+      useHeroColumns: false,
+      heroLayout: [12], // single column by default
+      heroColumns: [{ id: 'hc1', width: 12, blocks: [] }],
+    },
+    heroBanner: { 
+      title: '', 
+      subtitle: '', 
+      titleHtml: '',
+      subtitleHtml: '',
+      backgroundImage: '', 
+      backgroundColor: '#1e3a5f',
+      overlay: true, 
+      overlayOpacity: 50,
+      height: '500px', 
+      contentPosition: 'center-center',
+      cardCount: 3,
+      cardsPosition: 'inline',
+      defaultCardEffect: 'none',
+      styledTexts: [], // Styled text elements
+      cards: [
+        { icon: '', counter: '', suffix: '', title: '', subtitle: '', effect: '', bgColor: '#ffffff', iconColor: '#3b82f6', counterColor: '#111827', titleColor: '#111827', subtitleColor: '#6b7280', borderColor: '' },
+        { icon: '', counter: '', suffix: '', title: '', subtitle: '', effect: '', bgColor: '#ffffff', iconColor: '#3b82f6', counterColor: '#111827', titleColor: '#111827', subtitleColor: '#6b7280', borderColor: '' },
+        { icon: '', counter: '', suffix: '', title: '', subtitle: '', effect: '', bgColor: '#ffffff', iconColor: '#3b82f6', counterColor: '#111827', titleColor: '#111827', subtitleColor: '#6b7280', borderColor: '' },
+      ],
+    },
     cards: { items: [{ title: '', description: '', image: '', link: '' }], columns: 3 },
+    flipCards: {
+      columns: 3,
+      cardHeight: 320,
+      flipDirection: 'horizontal', // horizontal, vertical
+      flipTrigger: 'hover', // hover, click
+      items: [
+        {
+          // Front side
+          frontImage: '',
+          frontTitle: '',
+          frontSubtitle: '',
+          frontOverlay: true,
+          frontOverlayOpacity: 60,
+          frontTitleColor: '#ffffff',
+          frontSubtitleColor: 'rgba(255,255,255,0.8)',
+          // Back side
+          backTitle: '',
+          backDescription: '',
+          backButtonText: '',
+          backButtonUrl: '',
+          backBgColor: '#1e3a5f',
+          backBgGradient: '',
+          backTextColor: '#ffffff',
+          backButtonBg: '#ffffff',
+          backButtonColor: '#1e3a5f',
+        }
+      ]
+    },
+    textCards: {
+      columns: 2,
+      gap: 24,
+      items: [
+        {
+          // Card styling
+          bgColor: '#1e3a5f',
+          bgGradient: '',
+          borderRadius: 12,
+          padding: 32,
+          minHeight: 200,
+          // Text elements within the card
+          elements: [
+            {
+              text: 'Titel',
+              textStyle: 'simple',
+              fontSize: 32,
+              fontWeight: 'bold',
+              textColor: '#ffffff',
+              gradientFrom: '#00c2ff',
+              gradientTo: '#00fdcf',
+              glowColor: '#00c2ff',
+              textAlign: 'left',
+              wrapMode: 'wrap', // wrap, nowrap, preserve
+              marginBottom: 16,
+            }
+          ]
+        }
+      ]
+    },
     testimonial: { quote: '', author: '', role: '', avatar: '' },
     accordion: { items: [{ title: '', content: '' }], allowMultiple: false },
     counter: { items: [{ number: 0, suffix: '', label: '' }], columns: 4 },
     iconBox: { items: [{ icon: '⭐', title: '', description: '' }], columns: 3, style: 'default' },
+    countdown: {
+      targetDate: '',
+      targetTime: '00:00',
+      title: 'Countdown',
+      subtitle: '',
+      style: 'cards', // cards, flip, minimal, circular
+      showDays: true,
+      showHours: true,
+      showMinutes: true,
+      showSeconds: true,
+      // Colors
+      bgColor: '#1e3a5f',
+      textColor: '#ffffff',
+      numberColor: '#ffffff',
+      labelColor: 'rgba(255,255,255,0.7)',
+      accentColor: '#3b82f6',
+      // Card style specific
+      cardBg: 'rgba(255,255,255,0.1)',
+      cardBorder: 'rgba(255,255,255,0.2)',
+      // Labels
+      daysLabel: 'Dagen',
+      hoursLabel: 'Uren',
+      minutesLabel: 'Minuten',
+      secondsLabel: 'Seconden',
+      // Expired message
+      expiredTitle: 'De tijd is verstreken!',
+      expiredMessage: '',
+      hideWhenExpired: false,
+    },
   };
 
   return {
@@ -85,7 +248,7 @@ function createRow(cols = [12]) {
   };
 }
 
-export default function PageBuilder({ rows, onChange }) {
+export default function PageBuilder({ rows, onChange, onSave }) {
   const [activeRow, setActiveRow] = useState(null);
   const [editingBlock, setEditingBlock] = useState(null);
   const [showAddRow, setShowAddRow] = useState(false);
@@ -130,6 +293,13 @@ export default function PageBuilder({ rows, onChange }) {
         width,
         blocks: i === 0 ? currentBlocks : []
       }));
+      return { ...row, columns: newColumns };
+    }));
+  };
+
+  const reorderColumns = (rowId, newColumns) => {
+    onChange(rows.map(row => {
+      if (row.id !== rowId) return row;
       return { ...row, columns: newColumns };
     }));
   };
@@ -272,6 +442,7 @@ export default function PageBuilder({ rows, onChange }) {
               onDeleteRow={deleteRow}
               onChangeLayout={changeRowLayout}
               onUpdateSettings={updateRowSettings}
+              onReorderColumns={reorderColumns}
               onAddBlock={(colId) => setShowAddBlock({ rowId: row.id, colId })}
               onEditBlock={(colId, blockId) => setEditingBlock({ rowId: row.id, colId, blockId })}
               onDeleteBlock={(colId, blockId) => deleteBlock(row.id, colId, blockId)}
@@ -343,20 +514,68 @@ export default function PageBuilder({ rows, onChange }) {
         </div>
       )}
 
-      {/* Block Editor Panel */}
+      {/* Block Editor Modal - Full screen popup */}
       {editingBlock && currentBlock && (
-        <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-50 flex flex-col border-l border-gray-200">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h3 className="font-bold text-gray-800">
-              {BLOCK_TYPES.find(bt => bt.type === currentBlock.type)?.icon} {BLOCK_TYPES.find(bt => bt.type === currentBlock.type)?.label || currentBlock.type}
-            </h3>
-            <button onClick={() => setEditingBlock(null)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            <BlockEditor
-              block={currentBlock}
-              onChange={(data) => updateBlock(editingBlock.rowId, editingBlock.colId, editingBlock.blockId, data)}
-            />
+        <div 
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto"
+          onClick={() => setEditingBlock(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col my-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{BLOCK_TYPES.find(bt => bt.type === currentBlock.type)?.icon}</span>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-lg">
+                    {BLOCK_TYPES.find(bt => bt.type === currentBlock.type)?.label || currentBlock.type}
+                  </h3>
+                  <p className="text-xs text-gray-500">Bewerk de instellingen van dit blok</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingBlock(null)} 
+                className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-all"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Modal Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <BlockEditor
+                block={currentBlock}
+                onChange={(data) => updateBlock(editingBlock.rowId, editingBlock.colId, editingBlock.blockId, data)}
+              />
+            </div>
+            
+            {/* Sticky Footer with Save Button */}
+            <div className="sticky bottom-0 border-t border-gray-200 bg-gray-50 p-4 rounded-b-2xl flex items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={() => setEditingBlock(null)}
+                className="px-6 py-2.5 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+              >
+                Annuleren
+              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSave) onSave();
+                    setEditingBlock(null);
+                  }}
+                  className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Opslaan & Sluiten
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
